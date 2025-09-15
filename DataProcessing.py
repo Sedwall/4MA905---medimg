@@ -23,9 +23,10 @@ VALID = True
 TEST = True
 
 # Set up directories
-DIR = Path(__file__).parent.joinpath("dataset")
+DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
 PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+
 
 
 class DataProcessing:
@@ -52,7 +53,7 @@ class DataProcessing:
         Example processing 3: Image cropping
         data = data[:, :, 32:64, 32:64]  # Crop
         """
-
+        data = data[:, :, 32:64, 32:64]  # Crop
 
         return data
     
@@ -66,6 +67,8 @@ class DataProcessing:
 
 
     def save_data(self, data, file_path):
+        if not PROCESSED_DATA_FOLDER.exists():
+            PROCESSED_DATA_FOLDER.mkdir(parents=True, exist_ok=True)
         print(f"Save data to {str(file_path).split("\\")[-1]}...")
         pt.save(data, file_path)
 
