@@ -78,7 +78,8 @@ class DataProcessing:
             print(f"{self.find_file(path)} already exists. Skipping processing.\n")
             return None
         data = self.load_data(DATASET_FOLDER / path)
-        data = self.process_data(data)
+        if "x" in path:
+            data = self.process_data(data)
         self.save_data(data, PROCESSED_DATA_FOLDER / self.find_file(path))
         del data
         print("Data processed and saved.\n")
@@ -111,3 +112,4 @@ if TEST:
 
 if all(not flag for flag in [TRAIN, VALID, TEST]):
     print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
+
