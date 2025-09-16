@@ -62,7 +62,7 @@ class DataProcessing:
         print(f"Loading data from {str(file_path).split("\\")[-1]}...")
         with h5py.File(file_path, 'r') as f:
             key = str(f.keys())[-4]
-            data = pt.tensor(np.array(f[key]), dtype=pt.float32) / 255.0
+            data = pt.tensor(np.array(f[key]), dtype=pt.float32)
         return data
 
 
@@ -112,4 +112,5 @@ if TEST:
 
 if all(not flag for flag in [TRAIN, VALID, TEST]):
     print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
+
 
