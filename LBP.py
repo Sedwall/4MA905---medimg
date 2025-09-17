@@ -31,6 +31,7 @@ if __name__ == "__main__":
     from skimage import data
     image = data.astronaut().astype('uint8').mean(axis=2)
 
-    feature_vector = LBP_feature_extraction(image)
+    lbp_extractor = LBP()
+    feature_vector = lbp_extractor.LBP_feature_extraction(image)
     print("Image size:", image.shape)
     print("LBP Feature Vector size:", feature_vector.shape)
