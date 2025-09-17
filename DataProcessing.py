@@ -3,6 +3,11 @@ import numpy as np
 import h5py
 from pathlib import Path
 
+
+from LBP import LBP
+from tqdm import tqdm
+import concurrent.futures
+
 """
 This script processes and saves the PCAM dataset in PyTorch format.
 It loads data from HDF5 files, processes it (e.g., normalization), and saves
@@ -19,14 +24,17 @@ If a .pt files already exist, the script will skip processing for that data.
 """
 # Choose which data to load
 TRAIN = False
-VALID = True
+VALID = False
 TEST = True
 
 # Set up directories
-DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
+DIR = Path(__file__).parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
 PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
 
+lbp_extractor = LBP()
+def process_single_image(img):
+            return pt.tensor(lbp_extractor.LBP_feature_extraction(img))
 
 
 class DataProcessing:
@@ -37,10 +45,9 @@ class DataProcessing:
     This method is where you can add your own data processing logic.
     """
 
-
     def process_data(self, data: pt.Tensor) -> pt.Tensor:
         """Data processing function
-        data shape: (N, 3, 96, 96)
+        data shape: (N, 96, 96, 3)
         
         Example processing 1: Normalize data
         data = (data - pt.mean(data)) / pt.std(data)
@@ -51,24 +58,30 @@ class DataProcessing:
         return data
 
         Example processing 3: Image cropping
-        data = data[:, :, 32:64, 32:64]  # Crop
+        data = data[:, 32:64, 32:64, :]  # Crop
         """
-        data = data[:, :, 32:64, 32:64]  # Crop
-
-        return data
-    
+        # Convert RGB images to grayscale using standard weights
+        # data shape: (N, 96, 96, 3)
+        r, g, b = data[:, :, :, 0], data[:, :, :, 1], data[:, :, :, 2]
+        data = 0.2989 * r + 0.5870 * g + 0.1140 * b
+       
+        data = data.to(pt.uint8)  # Convert to integer for LBP processing
+        
+        with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
+            results = list(tqdm(executor.map(process_single_image, data), total=data.shape[0], desc="Processing data"))
+        del data
+        processed_data = pt.stack(results)
+        return processed_data
 
     def load_data(self, file_path):
         print(f"Loading data from {str(file_path).split("\\")[-1]}...")
         with h5py.File(file_path, 'r') as f:
             key = str(f.keys())[-4]
-            data = pt.tensor(np.array(f[key]), dtype=pt.float32) / 255.0
+            data = pt.tensor(np.array(f[key]), dtype=pt.float32)
         return data
 
 
     def save_data(self, data, file_path):
-        if not PROCESSED_DATA_FOLDER.exists():
-            PROCESSED_DATA_FOLDER.mkdir(parents=True, exist_ok=True)
         print(f"Save data to {str(file_path).split("\\")[-1]}...")
         pt.save(data, file_path)
 
@@ -78,7 +91,8 @@ class DataProcessing:
             print(f"{self.find_file(path)} already exists. Skipping processing.\n")
             return None
         data = self.load_data(DATASET_FOLDER / path)
-        data = self.process_data(data)
+        if "x" in path:
+            data = self.process_data(data)
         self.save_data(data, PROCESSED_DATA_FOLDER / self.find_file(path))
         del data
         print("Data processed and saved.\n")
@@ -89,25 +103,25 @@ class DataProcessing:
             if name in path:
                 return name + ".pt"
 
+if __name__ == "__main__":
+    # Start processing
+    print("Loading data from...")
+    print("Dataset folder:", DATASET_FOLDER)
 
-# Start processing
-print("Loading data from...")
-print("Dataset folder:", DATASET_FOLDER)
+    processor = DataProcessing()
 
-processor = DataProcessing()
+    # Load training data
+    if TRAIN:
+        processor.handle_data('camelyonpatch_level_2_split_train_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_train_y.h5')
+    # Load validation data
+    if VALID:
+        processor.handle_data('camelyonpatch_level_2_split_valid_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_valid_y.h5')
+    # Load test data
+    if TEST:
+        processor.handle_data('camelyonpatch_level_2_split_test_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_test_y.h5')
 
-# Load training data
-if TRAIN:
-    processor.handle_data('camelyonpatch_level_2_split_train_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_train_y.h5')
-# Load validation data
-if VALID:
-    processor.handle_data('camelyonpatch_level_2_split_valid_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_valid_y.h5')
-# Load test data
-if TEST:
-    processor.handle_data('camelyonpatch_level_2_split_test_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_test_y.h5')
-
-if all(not flag for flag in [TRAIN, VALID, TEST]):
-    print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
+    if all(not flag for flag in [TRAIN, VALID, TEST]):
+        print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
