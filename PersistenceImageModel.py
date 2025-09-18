@@ -11,7 +11,7 @@ from sklearn.svm import SVC
 
 # Import TDA pipeline requirements
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
-from gudhi.representations import PersistenceImage, DiagramSelector
+from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
 
 # Paths
 DIR = Path(__file__).parent.parent.joinpath("dataset")
@@ -27,10 +27,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 pipe = Pipeline(
     [
-        ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=-2)),
+        # ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=-2)),
         # Or for multiple persistence dimension computation
-        # ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
-        # ("H0_diags", DimensionSelector(index=0), # where index is the index in homology_dimensions array
+        ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
+        ("H0_diags", DimensionSelector(index=0)), # where index is the index in homology_dimensions array
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         (
             "pers_img",
