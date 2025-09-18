@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import os
 from time import time
 
-def calculate_persistence(data):
+def calculate_persistence(img):
     ##############
     # TDA part
     ##############
     # Build cubical complex from image intensity values
-    cc = gd.CubicalComplex(dimensions=data.shape, top_dimensional_cells=data.flatten())
+    # img should be a 2D numpy array (grayscale image)
+    cc = gd.CubicalComplex(dimensions=img.shape, top_dimensional_cells=img.flatten())
     return cc.persistence()
 
 def plot_persistence_diagram(persistence):
