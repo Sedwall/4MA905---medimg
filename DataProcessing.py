@@ -3,9 +3,6 @@ import numpy as np
 import h5py
 from pathlib import Path
 
-
-
-from TDA import calculate_betti_numbers, calculate_persistence
 from tqdm import tqdm
 import concurrent.futures
 
@@ -25,7 +22,7 @@ If a .pt files already exist, the script will skip processing for that data.
 """
 # Choose which data to load
 TRAIN = False
-VALID = True
+VALID = False
 TEST = True
 
 # Set up directories
@@ -33,13 +30,6 @@ DIR = Path(__file__).parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
 PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt_TDA/"))
 
-
-def get_Betti_numbers(img):
-    """Calculate Betti numbers for a image."""
-    img_np = img.numpy()
-    persistence = calculate_persistence(img_np)
-    betti_numbers = calculate_betti_numbers(persistence)
-    return pt.tensor(betti_numbers, dtype=pt.float32)
 
 class DataProcessing:
     """Data processing class for PCAM dataset
@@ -59,12 +49,8 @@ class DataProcessing:
         r, g, b = data[:, :, :, 0], data[:, :, :, 1], data[:, :, :, 2]
         data = 0.2989 * r + 0.5870 * g + 0.1140 * b
        
-        data = data.to(pt.uint8)  # Convert to integer for LBP processing
+        processed_data = data.to(pt.uint8)  # Convert to integer for LBP processing
         
-        with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
-            results = list(tqdm(executor.map(get_Betti_numbers, data), total=data.shape[0], desc="Processing data"))
-        del data
-        processed_data = pt.stack(results)
         return processed_data
     
 
