@@ -3,6 +3,12 @@ import numpy as np
 import h5py
 from pathlib import Path
 
+
+
+from TDA import calculate_betti_numbers, calculate_persistence
+from tqdm import tqdm
+import concurrent.futures
+
 """
 This script processes and saves the PCAM dataset in PyTorch format.
 It loads data from HDF5 files, processes it (e.g., normalization), and saves
@@ -23,11 +29,17 @@ VALID = True
 TEST = True
 
 # Set up directories
-DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
+DIR = Path(__file__).parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
-PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt_TDA/"))
 
 
+def get_Betti_numbers(img):
+    """Calculate Betti numbers for a image."""
+    img_np = img.numpy()
+    persistence = calculate_persistence(img_np)
+    betti_numbers = calculate_betti_numbers(persistence)
+    return pt.tensor(betti_numbers, dtype=pt.float32)
 
 class DataProcessing:
     """Data processing class for PCAM dataset
@@ -41,21 +53,19 @@ class DataProcessing:
     def process_data(self, data: pt.Tensor) -> pt.Tensor:
         """Data processing function
         data shape: (N, 3, 96, 96)
-        
-        Example processing 1: Normalize data
-        data = (data - pt.mean(data)) / pt.std(data)
 
-        Example processing 2: Data augmentation (e.g., random horizontal flip)
-        if pt.rand(1) > 0.5:
-            data = pt.flip(data, dims=[3])  # Horizontal flip
-        return data
-
-        Example processing 3: Image cropping
-        data = data[:, :, 32:64, 32:64]  # Crop
         """
-        data = data[:, :, 32:64, 32:64]  # Crop
-
-        return data
+        
+        r, g, b = data[:, :, :, 0], data[:, :, :, 1], data[:, :, :, 2]
+        data = 0.2989 * r + 0.5870 * g + 0.1140 * b
+       
+        data = data.to(pt.uint8)  # Convert to integer for LBP processing
+        
+        with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
+            results = list(tqdm(executor.map(get_Betti_numbers, data), total=data.shape[0], desc="Processing data"))
+        del data
+        processed_data = pt.stack(results)
+        return processed_data
     
 
     def load_data(self, file_path):
@@ -90,27 +100,27 @@ class DataProcessing:
             if name in path:
                 return name + ".pt"
 
+if __name__ == "__main__":
+    # Start processing
+    print("Loading data from...")
+    print("Dataset folder:", DATASET_FOLDER)
 
-# Start processing
-print("Loading data from...")
-print("Dataset folder:", DATASET_FOLDER)
+    processor = DataProcessing()
 
-processor = DataProcessing()
+    # Load training data
+    if TRAIN:
+        processor.handle_data('camelyonpatch_level_2_split_train_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_train_y.h5')
+    # Load validation data
+    if VALID:
+        processor.handle_data('camelyonpatch_level_2_split_valid_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_valid_y.h5')
+    # Load test data
+    if TEST:
+        processor.handle_data('camelyonpatch_level_2_split_test_x.h5')
+        processor.handle_data('camelyonpatch_level_2_split_test_y.h5')
 
-# Load training data
-if TRAIN:
-    processor.handle_data('camelyonpatch_level_2_split_train_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_train_y.h5')
-# Load validation data
-if VALID:
-    processor.handle_data('camelyonpatch_level_2_split_valid_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_valid_y.h5')
-# Load test data
-if TEST:
-    processor.handle_data('camelyonpatch_level_2_split_test_x.h5')
-    processor.handle_data('camelyonpatch_level_2_split_test_y.h5')
-
-if all(not flag for flag in [TRAIN, VALID, TEST]):
-    print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
+    if all(not flag for flag in [TRAIN, VALID, TEST]):
+        print("No data type selected. Please set TRAIN, VALID, or TEST to True.")
 
 
