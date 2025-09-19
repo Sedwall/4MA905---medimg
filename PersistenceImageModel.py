@@ -27,18 +27,19 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 pipe = Pipeline(
     [
-        ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=-2)),
+        ("cub_pers", CubicalPersistence(homology_dimensions=0, homology_coeff_field= 11, n_jobs=-2)),
         # Or for multiple persistence dimension computation
         # ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
         # ("H0_diags", DimensionSelector(index=0)), # where index is the index in homology_dimensions array
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         (
             "pers_img",
-            PersistenceImage(bandwidth=50, weight=lambda x: x[1] ** 2, im_range=[0, 256, 0, 256], resolution=[20, 20]),
+            PersistenceImage(bandwidth=50, weight=lambda x: x[1] ** 2, im_range=[0, 256, 0, 256], resolution=[5, 6]),
         ),
         ("knn", KNeighborsClassifier()),
     ]
 )
+# 
 
 print("Fitting TDA pipeline...")
 # Learn from the train subset
