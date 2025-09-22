@@ -2,6 +2,7 @@ import torch as pt
 import numpy as np
 import h5py
 from pathlib import Path
+from skimage.feature import hog
 
 """
 This script processes and saves the PCAM dataset in PyTorch format.
@@ -19,13 +20,13 @@ If a .pt files already exist, the script will skip processing for that data.
 """
 # Choose which data to load
 TRAIN = False
-VALID = True
+VALID = False
 TEST = True
 
 # Set up directories
 DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
-PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_HOG/"))
 
 
 
@@ -53,9 +54,19 @@ class DataProcessing:
         Example processing 3: Image cropping
         data = data[:, :, 32:64, 32:64]  # Crop
         """
-        data = data[:, :, 32:64, 32:64]  # Crop
-
-        return data
+        # data= data[:, 32:64, 32:64, :]  # Crop
+        result = []
+        for i in range(data.shape[0]):
+            fd = hog(
+                data[i].numpy().astype(int),
+                orientations=8,
+                pixels_per_cell=(16, 16),
+                cells_per_block=(5, 5),
+                visualize=False,
+                channel_axis=-1,
+            )
+            result.append(fd)
+        return pt.tensor(result)
     
 
     def load_data(self, file_path):
