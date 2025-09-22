@@ -1,74 +1,56 @@
-Param - PersistenceImage(resolution=[20, 20])
-Classification Report: On test data
-| Class       | Precision | Recall | F1-Score | Support |
-|-------------|-----------|--------|----------|---------|
-| 0.0         | 0.85      | 0.78   | 0.81     | 3278    |
-| 1.0         | 0.79      | 0.86   | 0.83     | 3276    |
-| Accuracy    |           |        | 0.82     | 6554    |
-| Macro Avg   | 0.82      | 0.82   | 0.82     | 6554    |
-| Weighted Avg| 0.82      | 0.82   | 0.82     | 6554    |
-
-
-
-Param - PersistenceImage(resolution=[15, 15])
-Classification Report: Accuracy: 0.8205675923100396
+Param - Logistic regression, PersistenceImage(resolution=[5, 6]), iter=10000
+Classification Report: Accuracy: 0.7885260909368325
                precision    recall  f1-score   support
 
-         0.0       0.85      0.78      0.81      3278
-         1.0       0.80      0.86      0.83      3276
+         0.0       0.78      0.80      0.79      3278
+         1.0       0.79      0.78      0.79      3276
 
-    accuracy                           0.82      6554
-   macro avg       0.82      0.82      0.82      6554
-weighted avg       0.82      0.82      0.82      6554
+    accuracy                           0.79      6554
+   macro avg       0.79      0.79      0.79      6554
+weighted avg       0.79      0.79      0.79      6554
 
 
-
-Param - PersistenceImage(resolution=[10, 10])
-Classification Report: Accuracy: 0.8220933780897162
+Param - Logistic regression, PersistenceImage(resolution=[10, 10]), iter=10000
+Classification Report: Accuracy: 0.793561184009765
                precision    recall  f1-score   support
 
-         0.0       0.85      0.78      0.81      3278
-         1.0       0.80      0.86      0.83      3276
+         0.0       0.78      0.81      0.80      3278
+         1.0       0.80      0.78      0.79      3276
 
-    accuracy                           0.82      6554
-   macro avg       0.82      0.82      0.82      6554
-weighted avg       0.82      0.82      0.82      6554
+    accuracy                           0.79      6554
+   macro avg       0.79      0.79      0.79      6554
+weighted avg       0.79      0.79      0.79      6554
 
-
-
-Param - PersistenceImage(resolution=[10, 10])
-Classification Report: Accuracy: 0.8246872139151663
+Param - Logistic regression, PersistenceImage(resolution=[10, 10]), iter=10000, c=10
+Classification Report: Accuracy: 0.797528227036924
                precision    recall  f1-score   support
 
-         0.0       0.85      0.78      0.82      3278
-         1.0       0.80      0.87      0.83      3276
+         0.0       0.79      0.81      0.80      3278
+         1.0       0.80      0.79      0.80      3276
 
-    accuracy                           0.82      6554
-   macro avg       0.83      0.82      0.82      6554
-weighted avg       0.83      0.82      0.82      6554
+    accuracy                           0.80      6554
+   macro avg       0.80      0.80      0.80      6554
+weighted avg       0.80      0.80      0.80      6554
 
-
-****Best Model****
-Param - PersistenceImage(resolution=[5, 6]) and homology_coeff_field= 11
-Classification Report: Accuracy: 0.824839792493134
+Param - Logistic regression, PersistenceImage(resolution=[10, 10]), iter=10000, c=100
+Classification Report: Accuracy: 0.7987488556606652
                precision    recall  f1-score   support
 
-         0.0       0.85      0.78      0.82      3278
-         1.0       0.80      0.87      0.83      3276
+         0.0       0.79      0.81      0.80      3278
+         1.0       0.81      0.79      0.80      3276
 
-    accuracy                           0.82      6554
-   macro avg       0.83      0.82      0.82      6554
-weighted avg       0.83      0.82      0.82      6554
+    accuracy                           0.80      6554
+   macro avg       0.80      0.80      0.80      6554
+weighted avg       0.80      0.80      0.80      6554
 
 
-
-Param - PersistenceImage(resolution=[5, 6]) and homology_coeff_field= 13
-Classification Report: Accuracy: 0.824839792493134
+Param - Logistic regression, PersistenceImage(resolution=[10, 10]), iter=10000, c=100, penalty=l2, solver=liblinear
+Classification Report: Accuracy: 0.7960024412572475
                precision    recall  f1-score   support
 
-         0.0       0.85      0.78      0.82      3278
-         1.0       0.80      0.87      0.83      3276
+         0.0       0.79      0.81      0.80      3278
+         1.0       0.80      0.78      0.79      3276
 
-    accuracy                           0.82      6554
-   macro avg       0.83      0.82      0.82      6554
-weighted avg       0.83      0.82      0.82      6554
+    accuracy                           0.80      6554
+   macro avg       0.80      0.80      0.80      6554
+weighted avg       0.80      0.80      0.80      6554

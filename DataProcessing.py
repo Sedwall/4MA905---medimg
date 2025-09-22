@@ -26,7 +26,7 @@ VALID = False
 TEST = True
 
 # Set up directories
-DIR = Path(__file__).parent.parent.joinpath("dataset")
+DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
 PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt_TDA/"))
 

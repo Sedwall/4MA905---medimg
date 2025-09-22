@@ -7,14 +7,15 @@ from sklearn.metrics import classification_report, accuracy_score
 # Standard scikit-learn imports
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 
 # Import TDA pipeline requirements
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
 from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
 
 # Paths
-DIR = Path(__file__).parent.parent.joinpath("dataset")
+DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam_pt_TDA/"))
 
 # Load dataset
@@ -34,9 +35,10 @@ pipe = Pipeline(
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         (
             "pers_img",
-            PersistenceImage(bandwidth=50, weight=lambda x: x[1] ** 2, im_range=[0, 256, 0, 256], resolution=[5, 6]),
+            PersistenceImage(bandwidth=50, weight=lambda x: x[1] ** 2, im_range=[0, 256, 0, 256], resolution=[10, 10]),
         ),
-        ("knn", KNeighborsClassifier()),
+        ("scaler", StandardScaler()),
+        ("linear", LogisticRegression(max_iter=10000, C=10, penalty="l2", solver="liblinear")),
     ]
 )
 # 
@@ -49,7 +51,7 @@ print("Predicting...")
 y_pred = pipe.predict(X_test)
 
 # Evaluate
-print("Evaluating SVM...")
+print("Evaluating Logistic Regression...")
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print(
     "\nClassification Report:\n",
