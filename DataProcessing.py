@@ -40,7 +40,7 @@ class DataProcessing:
 
     def process_data(self, data: pt.Tensor) -> pt.Tensor:
         """Data processing function
-        data shape: (N, 3, 96, 96)
+        data shape: (N, 96, 96, 3)
         
         Example processing 1: Normalize data
         data = (data - pt.mean(data)) / pt.std(data)
@@ -51,9 +51,9 @@ class DataProcessing:
         return data
 
         Example processing 3: Image cropping
-        data = data[:, :, 32:64, 32:64]  # Crop
+        data = data[:, 32:64, 32:64, :]  # Crop
         """
-        data = data[:, :, 32:64, 32:64]  # Crop
+        # data = data[:, 32:64, 32:64, :]  # Crop
 
         return data
     
