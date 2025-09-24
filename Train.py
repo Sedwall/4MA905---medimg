@@ -7,12 +7,16 @@ from torch.utils.data import DataLoader, TensorDataset
 from pathlib import Path
 import matplotlib.pyplot as plt
 from Evaluate import Evaluate
+from time import time
 
-path = Path("/home/p3_medimg/Project/dataset/pcam_pt")
+path = Path(__file__).parent.parent.parent / "dataset" / "pcam_pt"
+print(f"Using data from {path}")
+assert path.exists(), f"Path {path} does not exist"
 
 # Training data
 X = torch.load(path/"test_x.pt").permute(0, 3, 1, 2) # (N, channels, height, width)
 y = torch.load(path/"test_y.pt").reshape(-1).to(torch.long)
+
 
 # Validation data
 X_val = torch.load(path/"valid_x.pt").permute(0, 3, 1, 2)[:1_000]
@@ -20,10 +24,10 @@ y_val = torch.load(path/"valid_y.pt").reshape(-1).to(torch.long)[:1_000]
 print(f"Training data shape: {tuple(X.shape)}, Training labels shape: {tuple(y.shape)}")
 print(f"Validation data shape: {tuple(X_val.shape)}, Validation labels shape: {tuple(y_val.shape)}")
 
-n_epochs = 12
+n_epochs = 10
 batch_size = 512 # 512 fits in GPU memory
 
-DEVICE = "cuda:1" if torch.cuda.is_available() else "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print()
 print(f"Using {DEVICE} device")
 
@@ -39,6 +43,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 loss_history = []
 TOTAL_ITEMS = len(trainLoader.dataset) * n_epochs
 ITEMS_IN_EPOCH = len(trainLoader.dataset)
+start = time()
 
 # Training loop
 for epoch in range(n_epochs):
@@ -55,6 +60,10 @@ for epoch in range(n_epochs):
     loss_history.append(loss.item())
 print("\n")  # For newline after the last epoch
 
+run_time = time() - start
+hours, rem = divmod(run_time, 3600)
+minutes, seconds = divmod(rem, 60)
+
 del X, y  # Free memory
 del Xbatch, ybatch  # Free memory
 
@@ -64,6 +73,7 @@ model.save("model.pt")
 # Evaluate the model
 evaluator = Evaluate(model, DEVICE)
 metrics = evaluator.evaluate(X_val, y_val)
+metrics["training_time"] = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 evaluator.print_metrics(metrics)
 evaluator.save_metrics(metrics, "metrics.txt")
 
