@@ -24,7 +24,7 @@ y_val = torch.load(path/"valid_y.pt").reshape(-1).to(torch.long)[:1_000]
 print(f"Training data shape: {tuple(X.shape)}, Training labels shape: {tuple(y.shape)}")
 print(f"Validation data shape: {tuple(X_val.shape)}, Validation labels shape: {tuple(y_val.shape)}")
 
-n_epochs = 10
+n_epochs = 1
 batch_size = 512 # 512 fits in GPU memory
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -68,14 +68,14 @@ del X, y  # Free memory
 del Xbatch, ybatch  # Free memory
 
 # Save the model
-model.save("model.pt")
+model.save(Path(__file__).parent / "model.pt")
 
 # Evaluate the model
 evaluator = Evaluate(model, DEVICE)
 metrics = evaluator.evaluate(X_val, y_val)
 metrics["training_time"] = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 evaluator.print_metrics(metrics)
-evaluator.save_metrics(metrics, "metrics.txt")
+evaluator.save_metrics(metrics, Path(__file__).parent / "metrics.txt")
 
 # Plot training loss over epochs
 # Note: We only have the last loss value from each epoch.
@@ -84,4 +84,4 @@ plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.title("Training Loss over Epochs")
 plt.tight_layout()
-plt.savefig("plot.png")
+plt.savefig(Path(__file__).parent / "plot.png")
