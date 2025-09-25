@@ -63,6 +63,7 @@ class DataProcessing:
     def process_data(self, data: pt.Tensor) -> pt.Tensor:
         """Data processing function
         data shape: (N, 96, 96, 3)
+<<<<<<< HEAD
         
         Example processing 1: Normalize data
         data = (data - pt.mean(data)) / pt.std(data)
@@ -74,6 +75,13 @@ class DataProcessing:
                 json.dump({"max": float(self.MAX), "min": float(self.MIN)}, f)
         
         data = (data - self.MIN) / (self.MAX - self.MIN)
+=======
+        """
+        if data.max() > 1.5:
+            data = data.float() / 255.0  # Normalize to [0, 1]
+        # Normalize using training data statistics
+        data = (data - self.train_mean) / self.train_std
+>>>>>>> 6c67940432f398af5b4921fa43a20b6a5294c182
         return data
     
     def fit(self, train_data: pt.Tensor):
