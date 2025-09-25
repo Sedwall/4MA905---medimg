@@ -6,21 +6,21 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.hidden_layers = 256
         encoder_layer = nn.TransformerEncoderLayer(
-                    d_model=1024*2,
+                    d_model=1024,
                     nhead=2,
                     dim_feedforward=2048,
                     activation='relu',
                     batch_first=True
                     )
-        self.trans = nn.TransformerEncoder(encoder_layer, num_layers=1, norm=nn.LayerNorm(1024*2))
+        self.trans = nn.TransformerEncoder(encoder_layer, num_layers=1, norm=nn.LayerNorm(1024))
         self.unfold = nn.Unfold(kernel_size=(16, 16), stride=16)
         self.layerNorm = nn.LayerNorm(normalized_shape=(36, 768))
         self.linear = nn.Sequential(
-            nn.Linear(768, 1024*2),
+            nn.Linear(768, 1024),
             nn.ReLU(),
         )
         self.lin = nn.Sequential(
-            nn.Linear(1024*2, self.hidden_layers),
+            nn.Linear(1024, self.hidden_layers),
             nn.ReLU(),
             nn.Linear(self.hidden_layers, 2),
         )
