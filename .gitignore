@@ -2,6 +2,7 @@
 *.pyc
 
 # Ignore directories
+
 __pycache__/
 .DS_Store
 .vscode/
