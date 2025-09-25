@@ -5,6 +5,7 @@ class Evaluate:
     def __init__(self, model, device):
         self.model = model
         self.device = device
+        self.strObj = ['training_time', 'num_params', 'model_size']
 
     def evaluate(self, X, y):
         self.model.eval()
@@ -36,7 +37,7 @@ class Evaluate:
             f.write("Model Evaluation Metrics\n")
             f.write("=" * (longest_name + 14) + "\n")
             for metric, value in metrics.items():
-                if metric is 'training_time': f.write(f"{metric:<{longest_name}} : {value:>8}\n")
+                if metric in self.strObj: f.write(f"{metric:<{longest_name}} : {value:>8}\n")
                 else: f.write(f"{metric:<{longest_name}} : {value:>8.4f}\n")
             f.write("=" * (longest_name + 14) + "\n")
         print(f"Metrics saved to {filepath}")
@@ -48,7 +49,7 @@ class Evaluate:
         print("Model Evaluation Metrics")
         print("=" * (longest_name + 14))
         for metric, value in metrics.items():
-            if metric is 'training_time': print(f"{metric:<{longest_name}} : {value:>8}")
+            if metric in self.strObj: print(f"{metric:<{longest_name}} : {value:>8}")
             else: print(f"{metric:<{longest_name}} : {value:>8.4f}")
         print("=" * (longest_name + 14))
         print()
