@@ -1,0 +1,9 @@
+=======================
+Model Evaluation Metrics
+=======================
+accuracy  :   0.7730
+precision :   0.7768
+recall    :   0.7464
+f1_score  :   0.7613
+roc_auc   :   0.7722
+=======================

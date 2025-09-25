@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
 from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
 
+# Import for evaluation
 from Evaluate import Evaluate
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
