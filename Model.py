@@ -4,30 +4,43 @@ import torch as pt
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=4, stride=1, padding=1),
+        self.hidden_layers = 256
+        encoder_layer = nn.TransformerEncoderLayer(
+                    d_model=1024*2,
+                    nhead=2,
+                    dim_feedforward=2048,
+                    activation='relu',
+                    batch_first=True
+                    )
+        self.trans = nn.TransformerEncoder(encoder_layer, num_layers=1, norm=nn.LayerNorm(1024*2))
+        self.unfold = nn.Unfold(kernel_size=(16, 16), stride=16)
+        self.layerNorm = nn.LayerNorm(normalized_shape=(36, 768))
+        self.linear = nn.Sequential(
+            nn.Linear(768, 1024*2),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+        )
+        self.lin = nn.Sequential(
+            nn.Linear(1024*2, self.hidden_layers),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Flatten(),
-            nn.Linear(7744, 256),
-            nn.ReLU(),
-            nn.Linear(256, 2),
+            nn.Linear(self.hidden_layers, 2),
         )
 
+
     def forward(self, x):
-        # x shape: (batch, 96, 96, 3)
+        # x shape: (batch, 3, 96, 96)
         assert x.shape[1:] == (3, 96, 96)
-        x = self.layers(x)
+        patches = self.unfold(x)
+        patches = patches.permute(0, 2, 1)
+        patches = self.layerNorm(patches)
+        patches = self.linear(patches)
+        x = self.trans(patches)
+        x = self.lin(x[:, -1, :])
         return x
     
-    def save(self, path):
-        pt.save(self.state_dict(), path)
-
-    def load(self, path, device):
-        self.load_state_dict(pt.load(path, map_location=device))
+    def save(self, filepath):
+        pt.save(self.state_dict(), filepath)
+    
+    def load(self, filepath, device):
+        self.load_state_dict(pt.load(filepath, map_location=device))
+        self.to(device)
+        self.eval()

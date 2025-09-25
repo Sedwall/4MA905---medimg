@@ -2,6 +2,8 @@ import torch as pt
 import numpy as np
 import h5py
 from pathlib import Path
+import json
+
 
 """
 This script processes and saves the PCAM dataset in PyTorch format.
@@ -18,25 +20,45 @@ PROCESSED_DATA_FOLDER: Path to the folder where processed .pt files will be save
 If a .pt files already exist, the script will skip processing for that data.
 """
 # Choose which data to load
-TRAIN = False
+TRAIN = True
 VALID = True
 TEST = True
 
-# Set up directories
-DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
-DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
-PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+CHUNK = 10000 #Number of samples to process in chunk
 
+# Set up directories
+# DIR = Path(__file__).parent.joinpath("dataset_test")
+# DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
+# PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+
+DIR = Path(__file__).parent
+DATASET_FOLDER = DIR.parent.parent / "dataset" / "pcam"
+PROCESSED_DATA_FOLDER = DIR.parent.parent / "dataset" / "pcam_pt"
 
 
 class DataProcessing:
+
+    def __init__(self):
+        if (Path(__file__).parent / "min_max.json").exists():
+            with open((Path(__file__).parent / "min_max.json"), "r") as f:
+                min_max = json.load(f)
+                self.MAX = min_max["max"]
+                self.MIN = min_max["min"]
+                self.MEAN = min_max.get("mean", None)
+        else:
+            self.MAX = None
+            self.MIN = None
+            self.MEAN = None
+        
     """Data processing class for PCAM dataset
     this class handles loading, processing, and saving the data.
 
     The only method you might want to modify is `process_data`.
     This method is where you can add your own data processing logic.
     """
-
+    def __init__(self):
+        self.train_mean = None
+        self.train_std = None
 
     def process_data(self, data: pt.Tensor) -> pt.Tensor:
         """Data processing function
@@ -44,19 +66,23 @@ class DataProcessing:
         
         Example processing 1: Normalize data
         data = (data - pt.mean(data)) / pt.std(data)
-
-        Example processing 2: Data augmentation (e.g., random horizontal flip)
-        if pt.rand(1) > 0.5:
-            data = pt.flip(data, dims=[3])  # Horizontal flip
-        return data
-
-        Example processing 3: Image cropping
-        data = data[:, 32:64, 32:64, :]  # Crop
         """
-        # data = data[:, 32:64, 32:64, :]  # Crop
-
+        if self.MAX == None:
+            self.MAX = pt.max(data)
+            self.MIN = pt.min(data)
+            with open((Path(__file__).parent / "min_max.json"), "w") as f:
+                json.dump({"max": float(self.MAX), "min": float(self.MIN)}, f)
+        
+        data = (data - self.MIN) / (self.MAX - self.MIN)
         return data
     
+    def fit(self, train_data: pt.Tensor):
+        """Compute mean and std from training data"""
+        if train_data.max() > 1.5:
+            train_data = train_data.float() / 255.0  # Normalize to [0, 1]
+        # Compute mean and std
+        self.train_mean = train_data.mean(dim=(0,1,2))
+        self.train_std  = train_data.std(dim=(0,1,2), unbiased=False).clamp(min=1e-8)
 
     def load_data(self, file_path):
         print(f"Loading data from {str(file_path).split("\\")[-1]}...")
@@ -74,11 +100,20 @@ class DataProcessing:
 
 
     def handle_data(self, path):
+        # Check if processed file already exists
         if (PROCESSED_DATA_FOLDER / self.find_file(path)).exists():
             print(f"{self.find_file(path)} already exists. Skipping processing.\n")
             return None
+        
+        # Load data
         data = self.load_data(DATASET_FOLDER / path)
-        if "x" in path:
+        # Process data
+        if "train_x" in path:
+            self.fit(data)
+            data = self.process_data(data)
+        elif "valid_x" in path or "test_x" in path:
+            if self.train_mean is None or self.train_std is None:
+                raise ValueError("Train data must be processed before validation or test data.")
             data = self.process_data(data)
         self.save_data(data, PROCESSED_DATA_FOLDER / self.find_file(path))
         del data

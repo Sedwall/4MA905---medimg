@@ -14,32 +14,32 @@ print(f"Using data from {path}")
 assert path.exists(), f"Path {path} does not exist"
 
 # Training data
-X = torch.load(path/"test_x.pt").permute(0, 3, 1, 2) # (N, channels, height, width)
-y = torch.load(path/"test_y.pt").reshape(-1).to(torch.long)
+X = torch.load(path/"train_x.pt").permute(0, 3, 1, 2) # (N, channels, height, width)
+y = torch.load(path/"train_y.pt").reshape(-1).to(torch.long)
 
 
 # Validation data
-X_val = torch.load(path/"valid_x.pt").permute(0, 3, 1, 2)[:1_000]
-y_val = torch.load(path/"valid_y.pt").reshape(-1).to(torch.long)[:1_000]
+X_val = torch.load(path/"valid_x.pt").permute(0, 3, 1, 2)[:2_000]
+y_val = torch.load(path/"valid_y.pt").reshape(-1).to(torch.long)[:2_000]
 print(f"Training data shape: {tuple(X.shape)}, Training labels shape: {tuple(y.shape)}")
 print(f"Validation data shape: {tuple(X_val.shape)}, Validation labels shape: {tuple(y_val.shape)}")
 
-n_epochs = 1
-batch_size = 512 # 512 fits in GPU memory
+n_epochs = 50
+batch_size = 512 * 5
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print()
 print(f"Using {DEVICE} device")
 
-X = X.to(DEVICE)
-y = y.to(DEVICE)
+X = X
+y = y
 X_val = X_val.to(DEVICE)
 y_val = y_val.to(DEVICE)
 
 trainLoader = DataLoader(TensorDataset(X, y), batch_size=batch_size, shuffle=True)
 model = Model().to(DEVICE)
-loss_fn = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+loss_fn = nn.CrossEntropyLoss().to(DEVICE)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 loss_history = []
 TOTAL_ITEMS = len(trainLoader.dataset) * n_epochs
 ITEMS_IN_EPOCH = len(trainLoader.dataset)
@@ -48,6 +48,8 @@ start = time()
 # Training loop
 for epoch in range(n_epochs):
     for i, (Xbatch, ybatch) in enumerate(trainLoader):
+        Xbatch = Xbatch.to(DEVICE)
+        ybatch = ybatch.to(DEVICE)
         y_pred = model(Xbatch)
         loss = loss_fn(y_pred, ybatch)
         optimizer.zero_grad()
@@ -55,8 +57,8 @@ for epoch in range(n_epochs):
         optimizer.step()
         if i % 100 == 0:
             progress = epoch * ITEMS_IN_EPOCH + i * len(Xbatch)
-            stars = '=' * int(20 * (progress + 1) / TOTAL_ITEMS)
-            print(f"Train Epoch: {epoch} [{i * len(Xbatch):>5d}/{TOTAL_ITEMS} [{stars:-<19}] ({100. * progress / TOTAL_ITEMS:2.0f}%)]\tLoss: {loss.item():.6f}", end='\r')
+            stars = '=' * int(20 * (progress + 1) / TOTAL_ITEMS + 1)
+            print(f"Train Epoch: {epoch} [{i * len(Xbatch):>5d}/{TOTAL_ITEMS} [{stars:-<19}] ({100. * (progress+1) / TOTAL_ITEMS:2.0f}%)]\tLoss: {loss.item():.6f}", end='\r')
     loss_history.append(loss.item())
 print("\n")  # For newline after the last epoch
 
