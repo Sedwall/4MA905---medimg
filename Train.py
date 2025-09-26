@@ -50,11 +50,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using {device} device")
 torch.backends.cudnn.benchmark = True  # good for fixed-size images
 
+<<<<<<< HEAD
 # ---- Model, loss, optim ----
 model = Model().to(device)              # Model must output logits of shape [B, 2]
 loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
 optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
 scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+=======
+    # ---- Model, loss, optim ----
+    model = Model().to(DEVICE)              # Model must output logits of shape [B, 2]
+    loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+>>>>>>> c6dbb7f (Soon to be state of the art Model, Model acc. 87%)
 
 matplotlib.use("Agg")
 train_loss_history = []
