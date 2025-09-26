@@ -18,7 +18,7 @@ X_val = torch.load(dir.parent.joinpath("pcam_pt", "valid_x.pt")).permute(0, 3, 1
 y_val = torch.load(dir.parent.joinpath("pcam_pt", "valid_y.pt")).reshape(-1).to(torch.long)[:2_000]
 print(f"Validation data shape: {tuple(X_val.shape)}, Validation labels shape: {tuple(y_val.shape)}")
 
-n_epochs = 100
+n_epochs = 20
 batch_size = 512 * 6
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -32,15 +32,15 @@ Dataset = PCAMdataset(
 trainLoader = DataLoader(Dataset, batch_size=batch_size, shuffle=True)
 model = Model().to(DEVICE)
 loss_fn = nn.CrossEntropyLoss().to(DEVICE)
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.05)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs, eta_min=0.001)
 # Weight decay
 # Schedular
+# Optuna
 loss_history = []
 TOTAL_ITEMS = len(trainLoader.dataset) * n_epochs
 ITEMS_IN_EPOCH = len(trainLoader.dataset)
 start = time()
-
-it = trainLoader.__len__() / batch_size 
 
 # Training loop
 for epoch in range(n_epochs):
@@ -52,6 +52,8 @@ for epoch in range(n_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    
+    scheduler.step()
     # Evaluate on validation set
     model.eval()
     with torch.no_grad():
@@ -96,8 +98,8 @@ evaluator.save_metrics(metrics, Path(__file__).parent / "metrics.txt")
 
 # Plot training loss over epochs
 # Note: We only have the last loss value from each epoch.
-plt.plot(np.arange(len(loss_history)), [items[0] for items in loss_history], marker='o', label = "Traning Loss")
-plt.plot(np.arange(len(loss_history)), [items[1] for items in loss_history], marker='o', label = "Validation Loss")
+plt.plot(np.arange(len(loss_history)), [items[0] for items in loss_history], label = "Traning Loss")
+plt.plot(np.arange(len(loss_history)), [items[1] for items in loss_history], label = "Validation Loss")
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.title("Training Loss over Epochs")
