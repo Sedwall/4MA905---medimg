@@ -19,7 +19,7 @@ y_val = torch.load(dir.parent.joinpath("pcam_pt", "valid_y.pt")).reshape(-1).to(
 print(f"Validation data shape: {tuple(X_val.shape)}, Validation labels shape: {tuple(y_val.shape)}")
 
 n_epochs = 100
-batch_size = 512 * 3
+batch_size = 512 * 6
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {DEVICE} device")

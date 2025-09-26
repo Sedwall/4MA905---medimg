@@ -6,7 +6,7 @@ class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
         self.hidden_layers = 256
-        self.transInput = 192
+        self.transInput = 1024
         encoder_layer = nn.TransformerEncoderLayer(
                     d_model=self.transInput,
                     nhead=2,
@@ -16,29 +16,30 @@ class Model(nn.Module):
                     )
         self.trans = nn.TransformerEncoder(encoder_layer, num_layers=1, norm=nn.LayerNorm(self.transInput))
         self.layerNorm = nn.LayerNorm(normalized_shape=(9, self.transInput))
-    
+
+
         self.discriminator = nn.Sequential(
-            nn.Linear(192, self.hidden_layers),
+            nn.Linear(self.transInput, self.hidden_layers),
             nn.ReLU(),
             nn.Linear(self.hidden_layers, 2),
         )
         self.outerCNN = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
         )
         self.midCNN = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=4, stride=4),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
         )
@@ -62,7 +63,7 @@ class Model(nn.Module):
                     patch = self.outerCNN(patch)
                 patches.append(patch)
         patches = pt.stack(patches, dim=1)  # (batch, 9, 3, 32, 32)
-        patches = patches.reshape(x.shape[0], 9, 3*patches.shape[-1]**2)
+        patches = patches.reshape(x.shape[0], 9, patches.shape[2]*patches.shape[3]**2)
         patches = self.layerNorm(patches)
         x = self.trans(patches)
         x = self.discriminator(x[:, -1, :])
