@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import os
 from Model import Model
 import torch.nn as nn
 import torch.optim as optim
@@ -11,6 +12,11 @@ from time import time
 from torch.utils.data import DataLoader
 from PCAMdataset import PCAMdataset
 from torchvision import transforms as T
+from torch.utils.tensorboard import SummaryWriter
+
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # 0=all, 1=info, 2=warning, 3=error
+
 
 if __name__ == '__main__':
     mean_gray = 0.6043
@@ -57,14 +63,13 @@ if __name__ == '__main__':
     # ---- Model, loss, optim ----
     model = Model().to(DEVICE)              # Model must output logits of shape [B, 2]
     loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
-
+    optimizer = optim.Adam(model.parameters(), lr=1e-2, weight_decay=1e-3)
 
     matplotlib.use("Agg")
     train_loss_history = []
     val_loss_history   = []
     # ---- Training / Eval loops ----
-    def run_epoch(loader, train=True):
+    def run_epoch(loader, epoch, train=True):
         model.train(train)
         total_loss, total_correct, total = 0.0, 0, 0
 
@@ -85,6 +90,7 @@ if __name__ == '__main__':
             if train:
                 loss.backward()
                 optimizer.step()
+                
 
             total_loss += loss.item() * xb.size(0)
             with torch.no_grad():
@@ -97,19 +103,35 @@ if __name__ == '__main__':
         return avg_loss, acc
 
     # ---- Fit ----
-    n_epochs = 15
-    start = time()
+    n_epochs = 20
 
+    start = time()
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
+    log_dir = Path(__file__).parent / "runs" / "experiment2"
+    writer = SummaryWriter(log_dir=log_dir)
+
+    # ---- Main Loop ----
     for epoch in range(1, n_epochs + 1):
-        train_loss, train_acc = run_epoch(train_dl, train=True)
-        val_loss, val_acc     = run_epoch(val_dl,   train=False)
+        train_loss, train_acc = run_epoch(train_dl, epoch, train=True)
+        val_loss, val_acc     = run_epoch(val_dl,   epoch, train=False)
 
         train_loss_history.append(train_loss)
         val_loss_history.append(val_loss)
 
+        scheduler.step()
+
         print(f"Epoch {epoch:02d} | "
             f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
             f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
+        
+        # ---- TensorBoard logging ----
+        writer.add_scalar("Loss/train", train_loss, epoch)
+        writer.add_scalar("Accuracy/train", train_acc, epoch)
+        writer.add_scalar("Loss/val", val_loss, epoch)
+        writer.add_scalar("Accuracy/val", val_acc, epoch)
+
+        current_lr = optimizer.param_groups[0]['lr']
+        writer.add_scalar("LearningRate", current_lr, epoch)
 
     elapsed = time() - start
     h, rem = divmod(elapsed, 3600)
