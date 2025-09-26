@@ -1,17 +1,24 @@
 import torch
+from PCAMdataset import PCAMdataset
+from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
 class Evaluate:
-    def __init__(self, model, device):
+    def __init__(self, model, val_data: DataLoader, device):
         self.model = model
         self.device = device
         self.strObj = ['training_time', 'num_params', 'model_size']
+        self.dataset = val_data
 
-    def evaluate(self, X, y):
+    def evaluate(self):
         self.model.eval()
         with torch.no_grad():
+            # Get one big batch from the DataLoader
+            data_iter = iter(self.dataset)
+            X, y = next(data_iter)
             X = X.to(self.device)
             y = y.to(self.device)
+
             y_pred = self.model(X)
             y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
             y_true = y.cpu().numpy()
@@ -20,7 +27,16 @@ class Evaluate:
             precision = precision_score(y_true, y_pred_labels, zero_division=0)
             recall = recall_score(y_true, y_pred_labels, zero_division=0)
             f1 = f1_score(y_true, y_pred_labels, zero_division=0)
-            roc_auc = roc_auc_score(y_true, y_pred[:, 1].cpu().numpy())
+            # For binary classification, use y_pred[:, 1] as probability for class 1
+            roc_auc = roc_auc_score(y_true, y_pred[:, 1].cpu().numpy()) if y_pred.shape[1] > 1 else 0.0
+
+        return {
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1,
+            "roc_auc": roc_auc
+        }
 
         return {
             "accuracy": accuracy,
