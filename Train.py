@@ -57,7 +57,8 @@ if __name__ == '__main__':
     # ---- Model, loss, optim ----
     model = Model().to(DEVICE)              # Model must output logits of shape [B, 2]
     loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
 
     matplotlib.use("Agg")
     train_loss_history = []
