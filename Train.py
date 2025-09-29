@@ -4,6 +4,8 @@ import os
 from Model import Model
 import torch.nn as nn
 import torch.optim as optim
+import numpy
+import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib
@@ -12,10 +14,15 @@ from time import time
 from torch.utils.data import DataLoader
 from PCAMdataset import PCAMdataset
 from torchvision import transforms as T
-from torch.utils.tensorboard import SummaryWriter
 
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # 0=all, 1=info, 2=warning, 3=error
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    numpy.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+g = torch.Generator()
+g.manual_seed(0)
 
 
 if __name__ == '__main__':
@@ -23,6 +30,7 @@ if __name__ == '__main__':
     std_gray  = 0.2530
     mean = [0.7008, 0.5384, 0.6916]
     std = [0.2350, 0.2774, 0.2129]
+
 
     # Define transforms
     train_tf = T.Compose([
@@ -52,9 +60,15 @@ if __name__ == '__main__':
     )
 
     train_dl = DataLoader(train_data, batch_size=512, shuffle=True,
-                        num_workers=4, pin_memory=True, persistent_workers=True)
+                        num_workers=4, pin_memory=True, persistent_workers=True,
+                        worker_init_fn=seed_worker,
+                        generator=g,
+                        )
     val_dl   = DataLoader(test_data, batch_size=512, shuffle=False,
-                        num_workers=4, pin_memory=True, persistent_workers=True)
+                        num_workers=4, pin_memory=True, persistent_workers=True,
+                        worker_init_fn=seed_worker,
+                        generator=g,
+                        )
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {DEVICE} DEVICE")
@@ -107,8 +121,6 @@ if __name__ == '__main__':
 
     start = time()
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
-    log_dir = Path(__file__).parent / "runs" / "experiment2"
-    writer = SummaryWriter(log_dir=log_dir)
 
     # ---- Main Loop ----
     for epoch in range(1, n_epochs + 1):
@@ -124,14 +136,6 @@ if __name__ == '__main__':
             f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
             f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
         
-        # ---- TensorBoard logging ----
-        writer.add_scalar("Loss/train", train_loss, epoch)
-        writer.add_scalar("Accuracy/train", train_acc, epoch)
-        writer.add_scalar("Loss/val", val_loss, epoch)
-        writer.add_scalar("Accuracy/val", val_acc, epoch)
-
-        current_lr = optimizer.param_groups[0]['lr']
-        writer.add_scalar("LearningRate", current_lr, epoch)
 
     elapsed = time() - start
     h, rem = divmod(elapsed, 3600)
@@ -157,7 +161,10 @@ if __name__ == '__main__':
     # Evaluate Model
     N_eval_points = 2_000
     eval_dl = DataLoader(test_data, batch_size=N_eval_points, shuffle=False,
-                        num_workers=4, pin_memory=True, persistent_workers=True)
+                        num_workers=4, pin_memory=True, persistent_workers=True,
+                        worker_init_fn=seed_worker,
+                        generator=g,
+                        )
     
     evaluator = Evaluate(model, eval_dl, DEVICE)
     metrics = evaluator.evaluate()
