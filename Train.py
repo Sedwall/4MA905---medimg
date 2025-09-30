@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import os
-from Model import Model
+from Utilities.Model import Model
 import torch.nn as nn
 import torch.optim as optim
 import numpy
@@ -9,10 +9,10 @@ import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib
-from Evaluate import Evaluate
+from Utilities.Evaluate import Evaluate
 from time import time
 from torch.utils.data import DataLoader
-from PCAMdataset import PCAMdataset
+from Utilities.PCAMdataset import PCAMdataset
 from torchvision import transforms as T
 
 
@@ -23,6 +23,11 @@ def seed_worker(worker_id):
 
 g = torch.Generator()
 g.manual_seed(0)
+torch.manual_seed(0)
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"  # 0=all, 1=info, 2=warning, 3=error
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # 0=all, 1=info, 2=warning, 3=error
+
 
 
 if __name__ == '__main__':
@@ -36,10 +41,13 @@ if __name__ == '__main__':
     train_tf = T.Compose([
         #T.Grayscale(num_output_channels=1), # convert to grayscale
         T.Normalize(mean_gray, std_gray), # standardize
+        # T.CenterCrop((32,32))
     ])
 
     eval_tf  = T.Compose([
+        T.ToTensor(),
         T.Normalize(mean_gray, std_gray),
+        # T.CenterCrop((32,32))
     ])
 
     # Setting up directory

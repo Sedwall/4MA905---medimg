@@ -2,10 +2,8 @@ import torch.nn as nn
 import torch as pt
 
 class Model(nn.Module):
-    def __init__(self):
+    def __init__(self, chanels=16, dropout=.5):
         super(Model, self).__init__()
-        dropout = 0.5
-        chanels = 16
         self.layers = nn.Sequential(
             nn.Conv2d(3, chanels, kernel_size=4, stride=1, padding=1),
             nn.ReLU(),
