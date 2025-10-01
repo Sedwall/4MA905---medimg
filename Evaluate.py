@@ -20,15 +20,36 @@ class Evaluate:
             y = y.to(self.device)
 
             y_pred = self.model(X)
-            y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
-            y_true = y.cpu().numpy()
+            # om cross-entropy:
+            # y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
+            # y_true = y.cpu().numpy()
+
+            # om BCE:
+            logits = y_pred.view(-1)
+            targets = y.view(-1)
+            probs = torch.sigmoid(logits)
+            y_pred_labels = (probs >= 0.5).long().cpu().numpy()
+            y_true = targets.long().cpu().numpy()
 
             accuracy = accuracy_score(y_true, y_pred_labels)
             precision = precision_score(y_true, y_pred_labels, zero_division=0)
             recall = recall_score(y_true, y_pred_labels, zero_division=0)
             f1 = f1_score(y_true, y_pred_labels, zero_division=0)
             # For binary classification, use y_pred[:, 1] as probability for class 1
-            roc_auc = roc_auc_score(y_true, y_pred[:, 1].cpu().numpy()) if y_pred.shape[1] > 1 else 0.0
+            #roc_auc = roc_auc_score(y_true, y_pred[:, 1].cpu().numpy()) if y_pred.shape[1] > 1 else 0.0
+            
+            # CrossEntropy: ta softmax
+            if y_pred.ndim == 2 and y_pred.size(1) > 1:
+                probs = torch.softmax(y_pred, dim=1)[:, 1].detach().cpu().numpy()
+            else:
+                # BCE: ta sigmoid(logit)
+                probs = torch.sigmoid(y_pred.view(-1)).detach().cpu().numpy()
+
+            y_true = y.view(-1).long().cpu().numpy()
+            try:
+                roc_auc = roc_auc_score(y_true, probs)
+            except ValueError:
+                roc_auc = float("nan")
 
         return {
             "accuracy": accuracy,
