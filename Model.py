@@ -28,6 +28,6 @@ class Model(nn.Module):
 
     def forward(self, x):
         # x shape: (batch, 96, 96, 3)
-        assert x.shape[1:] == (3, 96, 96)
+        assert x.shape[1:] == (3, 32, 32)
         x = self.layers(x)
         return x

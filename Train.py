@@ -22,10 +22,12 @@ if __name__ == '__main__':
     train_tf = T.Compose([
         #T.Grayscale(num_output_channels=1), # convert to grayscale
         T.Normalize(mean_gray, std_gray), # standardize
+        T.CenterCrop(32)
     ])
 
     eval_tf  = T.Compose([
         T.Normalize(mean_gray, std_gray),
+        T.CenterCrop(32)
     ])
 
     # Setting up directory
