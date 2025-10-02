@@ -46,35 +46,33 @@ def build_dataloaders(args, DEVICE, g=g):
 
     # Define gpu transforms
     gpu_train_tf = TV2.Compose([
-        TV2.RandomResizedCrop(
-            size=(96, 96),
-            scale=(0.9, 1.0),                    # lite bredare zoom-range
-            interpolation=IM.BICUBIC,
-            antialias=True,
-        ),
+        # TV2.RandomResizedCrop(
+        #     size=(96, 96),
+        #     scale=(0.85, 1.0),                    # lite bredare zoom-range
+        #     interpolation=IM.BICUBIC,
+        #     antialias=True,
+        # ),
         TV2.RandomHorizontalFlip(),
         TV2.RandomVerticalFlip(),
-        TV2.RandomRotation(
-            degrees=15,
-            interpolation=IM.BILINEAR,
-            fill=0,                              # eller tuple med din bakgrundsmedel
+        TV2.RandomAffine(degrees=10, translate=(0.02,0.02),     # mild rotation/zoom/shift
+            scale=(0.95, 1.05), interpolation=IM.BILINEAR
         ),
-        TV2.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.03),
+        TV2.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
         TV2.RandomApply([TV2.GaussianBlur(kernel_size=3)], p=0.2),
-        TV2.ToDtype(torch.float32, scale=True),
+        TV2.ToDtype(torch.float32, scale=False),
         TV2.Normalize(mean=mean_rgb, std=std_rgb),
     ]).to(DEVICE)
 
     gpu_eval_tf = TV2.Compose([
         # TV2.Resize(size=96),
         # TV2.CenterCrop(size=96),
-        TV2.ToDtype(torch.float32, scale=True),
+        TV2.ToDtype(torch.float32, scale=False),
         TV2.Normalize(mean=mean_rgb, std=std_rgb),
     ]).to(DEVICE)
 
      # Setting up directory
-    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
-    #path_dir = Path('/home/helga/projects/4MA905 DL project/data/pcam/')
+    #path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
+    path_dir = Path('/home/helga/projects/4MA905 DL project/data/pcam/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets
@@ -103,9 +101,9 @@ def build_dataloaders(args, DEVICE, g=g):
     return train_dl, val_dl, gpu_train_tf, gpu_eval_tf, test_data
 
 def build_model_and_optimizer(args, DEVICE):
-    model = Model().to(DEVICE)             # Model must output logits of shape [B, 2]
+    model = Model(chanels=32).to(DEVICE)             # Model must output logits of shape [B, 2]
     #set_bn_momentum(model, m=0.005)
-    loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
+    loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)         # targets: int64 class ids (0/1)
     optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4) 
     return model, loss_fn, optimizer
 
@@ -166,7 +164,7 @@ if __name__ == '__main__':
         return optim.param_groups[0]["lr"]
     
     # ---- Fit ----
-    n_epochs = 40
+    n_epochs = 20
 
     start = time()
     #scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3,
