@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import os
-from Model import PCamCNN
+from Model import PCamCNN, Model
 import torch.nn as nn
 import torch.optim as optim
 import numpy
@@ -9,6 +9,7 @@ import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib
+matplotlib.use("Agg")
 from Evaluate import Evaluate
 from time import time
 from torch.utils.data import DataLoader
@@ -47,7 +48,7 @@ def build_dataloaders(args, DEVICE, g=g):
     gpu_train_tf = TV2.Compose([
         TV2.RandomResizedCrop(
             size=(96, 96),
-            scale=(0.6, 1.0),                    # lite bredare zoom-range
+            scale=(0.9, 1.0),                    # lite bredare zoom-range
             interpolation=IM.BICUBIC,
             antialias=True,
         ),
@@ -60,18 +61,20 @@ def build_dataloaders(args, DEVICE, g=g):
         ),
         TV2.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.03),
         TV2.RandomApply([TV2.GaussianBlur(kernel_size=3)], p=0.2),
+        TV2.ToDtype(torch.float32, scale=True),
         TV2.Normalize(mean=mean_rgb, std=std_rgb),
     ]).to(DEVICE)
 
     gpu_eval_tf = TV2.Compose([
         # TV2.Resize(size=96),
         # TV2.CenterCrop(size=96),
+        TV2.ToDtype(torch.float32, scale=True),
         TV2.Normalize(mean=mean_rgb, std=std_rgb),
     ]).to(DEVICE)
 
      # Setting up directory
-    #path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
-    path_dir = Path('/home/helga/projects/4MA905 DL project/data/pcam/')
+    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
+    #path_dir = Path('/home/helga/projects/4MA905 DL project/data/pcam/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets
@@ -100,10 +103,10 @@ def build_dataloaders(args, DEVICE, g=g):
     return train_dl, val_dl, gpu_train_tf, gpu_eval_tf, test_data
 
 def build_model_and_optimizer(args, DEVICE):
-    model = PCamCNN().to(DEVICE)             # Model must output logits of shape [B, 2]
-    set_bn_momentum(model, 0.01)
+    model = Model().to(DEVICE)             # Model must output logits of shape [B, 2]
+    #set_bn_momentum(model, m=0.005)
     loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
-    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4) 
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4) 
     return model, loss_fn, optimizer
 
 def set_bn_momentum(model, m=0.01):
@@ -119,7 +122,6 @@ if __name__ == '__main__':
     # ---- Model, loss, optim ----
     model, loss_fn, optimizer = build_model_and_optimizer(args, DEVICE)
 
-    matplotlib.use("Agg")
     train_loss_history = []
     val_loss_history   = []
     # ---- Training / Eval loops ----
@@ -139,14 +141,15 @@ if __name__ == '__main__':
 
             optimizer.zero_grad(set_to_none=True)
 
-            # Nya autocast-API:t
-            with torch.amp.autocast('cuda', enabled=(DEVICE.type == "cuda")):
-                logits = model(xb)              # [B, K]
-                loss = loss_fn(logits, yb)      # yb: [B] Long
+            with torch.set_grad_enabled(train):
+                # Nya autocast-API:t
+                with torch.amp.autocast('cuda', enabled=(DEVICE.type == "cuda")):
+                    logits = model(xb)              # [B, K]
+                    loss = loss_fn(logits, yb)      # yb: [B] Long
 
-            if train:
-                loss.backward()
-                optimizer.step()
+                if train:
+                    loss.backward()
+                    optimizer.step()
 
             total_loss += loss.item() * xb.size(0)
             with torch.no_grad():
@@ -163,11 +166,12 @@ if __name__ == '__main__':
         return optim.param_groups[0]["lr"]
     
     # ---- Fit ----
-    n_epochs = 50
+    n_epochs = 40
 
     start = time()
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3,
-                              threshold=1e-4)
+    #scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3,
+    #                          threshold=1e-4)
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=n_epochs)
 
     # ---- Main Loop ----
     for epoch in range(1, n_epochs + 1):
@@ -177,12 +181,14 @@ if __name__ == '__main__':
         train_loss_history.append(train_loss)
         val_loss_history.append(val_loss)
 
-        scheduler.step(val_loss)
+        scheduler.step()
+        #scheduler.step(val_loss)
         lr = get_lr(optimizer)
-
+        
         print(f"Epoch {epoch:02d} | "
             f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
-            f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
+            f"val: loss {val_loss:.4f}, acc {val_acc:.4f}"
+            f" | lr {lr:.6f}")
         
 
     elapsed = time() - start
