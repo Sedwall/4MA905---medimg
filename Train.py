@@ -14,15 +14,17 @@ from time import time
 from torch.utils.data import DataLoader
 from PCAMdataset import PCAMdataset
 from torchvision import transforms as T
+import torchvision.transforms.v2 as TV2
 from torch.profiler import profile, ProfilerActivity, schedule, tensorboard_trace_handler
 import argparse
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torchvision.transforms import InterpolationMode as IM
 
-parser = argparse.ArgumentParser()
-# ... dina andra args ...
-parser.add_argument("--profile", action="store_true",
-                    help="Profilera run_epoch med PyTorch Profiler (CPU+CUDA)")
-args = parser.parse_args()
-
+# set device
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using {DEVICE} DEVICE")
+torch.backends.cudnn.benchmark = True  # kan ge snabbare träning för fasta input-storlekar
+args = None
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -32,50 +34,59 @@ def seed_worker(worker_id):
 g = torch.Generator()
 g.manual_seed(0)
 
-
-if __name__ == '__main__':
+def build_dataloaders(args, DEVICE, g=g):
     # mean and std computed from training set
     # for grayscale and RGB images
     mean_gray = 0.6043
     std_gray  = 0.2530
     mean_rgb = [0.7008, 0.5384, 0.6916]
     std_rgb = [0.2350, 0.2774, 0.2129]
+    
 
+    # Define gpu transforms
+    gpu_train_tf = TV2.Compose([
+        TV2.RandomResizedCrop(
+            size=(96, 96),
+            scale=(0.6, 1.0),                    # lite bredare zoom-range
+            interpolation=IM.BICUBIC,
+            antialias=True,
+        ),
+        TV2.RandomHorizontalFlip(),
+        TV2.RandomVerticalFlip(),
+        TV2.RandomRotation(
+            degrees=15,
+            interpolation=IM.BILINEAR,
+            fill=0,                              # eller tuple med din bakgrundsmedel
+        ),
+        TV2.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.03),
+        TV2.RandomApply([TV2.GaussianBlur(kernel_size=3)], p=0.2),
+        TV2.Normalize(mean=mean_rgb, std=std_rgb),
+    ]).to(DEVICE)
 
-    # Define transforms
-    train_tf = T.Compose([
-        T.RandomResizedCrop(size=96, scale=(0.8, 1.0)),
-        T.RandomHorizontalFlip(),
-        T.RandomVerticalFlip(),
-        T.RandomRotation(degrees=15),
-        T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.03),
-        T.RandomApply([T.GaussianBlur(3)], p=0.2),
-        # Normalisering
-        T.Normalize(mean=mean_rgb, std=std_rgb),
-    ])
-    eval_tf = T.Compose([
-        T.Resize(size=96),
-        T.CenterCrop(size=96),
-        T.Normalize(mean=mean_rgb, std=std_rgb),
-    ])
+    gpu_eval_tf = TV2.Compose([
+        # TV2.Resize(size=96),
+        # TV2.CenterCrop(size=96),
+        TV2.Normalize(mean=mean_rgb, std=std_rgb),
+    ]).to(DEVICE)
 
-    # Setting up directory
-    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
+     # Setting up directory
+    #path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/')
+    path_dir = Path('/home/helga/projects/4MA905 DL project/data/pcam/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets
     train_data = PCAMdataset(
         x_path=path_dir / 'camelyonpatch_level_2_split_train_x.h5',
         y_path=path_dir /'camelyonpatch_level_2_split_train_y.h5',
-        transform=train_tf
+        transform=None  # inga CPU-transforms
     )
 
     test_data = PCAMdataset(
         x_path=path_dir / 'camelyonpatch_level_2_split_test_x.h5',
         y_path=path_dir / 'camelyonpatch_level_2_split_test_y.h5',
-        transform=eval_tf
+        transform=None  # inga CPU-transforms
     )
-
+    
     train_dl = DataLoader(train_data, batch_size=512, shuffle=True,
                         num_workers=4, pin_memory=True, persistent_workers=True,
                         worker_init_fn=seed_worker,
@@ -86,15 +97,27 @@ if __name__ == '__main__':
                         worker_init_fn=seed_worker,
                         generator=g,
                         )
+    return train_dl, val_dl, gpu_train_tf, gpu_eval_tf, test_data
 
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using {DEVICE} DEVICE")
-    torch.backends.cudnn.benchmark = True  # good for fixed-size images
+def build_model_and_optimizer(args, DEVICE):
+    model = PCamCNN().to(DEVICE)             # Model must output logits of shape [B, 2]
+    set_bn_momentum(model, 0.01)
+    loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4) 
+    return model, loss_fn, optimizer
+
+def set_bn_momentum(model, m=0.01):
+    import torch.nn as nn
+    for mod in model.modules():
+        if isinstance(mod, nn.BatchNorm2d):
+            mod.momentum = m
+
+if __name__ == '__main__':
+    # ---- Data ----
+    train_dl, val_dl, gpu_train_tf, gpu_eval_tf, test_data = build_dataloaders(args, DEVICE)
 
     # ---- Model, loss, optim ----
-    model = PCamCNN().to(DEVICE)              # Model must output logits of shape [B, 2]
-    loss_fn = nn.BCEWithLogitsLoss()         # targets: int64 class ids (0/1)
-    optimizer = optim.Adam(model.parameters(), lr=3e-4, weight_decay=1e-4)
+    model, loss_fn, optimizer = build_model_and_optimizer(args, DEVICE)
 
     matplotlib.use("Agg")
     train_loss_history = []
@@ -102,79 +125,49 @@ if __name__ == '__main__':
     # ---- Training / Eval loops ----
     def run_epoch(loader, epoch, train=True):
         model.train(train)
-        total_loss, total_correct, total = 0.0, 0, 0
+        total_loss = total_correct = total = 0
 
         for xb, yb in loader:
             xb = xb.to(DEVICE, non_blocking=True)
-            # CE expects long labels; if your dataset yields float 0/1, this cast fixes it
-            yb = yb.to(DEVICE, non_blocking=True).float()
+            yb = yb.to(DEVICE, non_blocking=True).long().view(-1)  # CE targets: [B] Long
+
+            # GPU-transforms i FP32 – enklast: kör dem UTAN autocast
+            if train:
+                xb = gpu_train_tf(xb)   # se till att gpu_train_tf.to(DEVICE) är gjort där du bygger den
+            else:
+                xb = gpu_eval_tf(xb)
 
             optimizer.zero_grad(set_to_none=True)
 
+            # Nya autocast-API:t
             with torch.amp.autocast('cuda', enabled=(DEVICE.type == "cuda")):
-                logits = model(xb)                  # expect [B, 2]
-                # sanity guard (remove if bothersome)
-                # if logits.ndim != 2 or logits.size(1) != 2:
-                #     raise RuntimeError(f"Model must return [B,2] for CrossEntropyLoss, got {tuple(logits.shape)}")
-                loss = loss_fn(logits, yb)
+                logits = model(xb)              # [B, K]
+                loss = loss_fn(logits, yb)      # yb: [B] Long
 
             if train:
                 loss.backward()
                 optimizer.step()
-                
 
             total_loss += loss.item() * xb.size(0)
             with torch.no_grad():
-                # preds = logits.argmax(dim=1)       # [B]
-                # total_correct += (preds == yb).sum().item()
-                # total += xb.size(0)
-
-                probs = torch.sigmoid(logits)               # [B]
-                preds = (probs >= 0.5).long()               # [B]
-                total_correct += (preds == yb.long().view(-1)).sum().item()
+                preds = logits.argmax(dim=1)    # [B]
+                total_correct += (preds == yb).sum().item()
                 total += xb.size(0)
 
         avg_loss = total_loss / max(total, 1)
         acc = total_correct / max(total, 1)
         return avg_loss, acc
 
+    def get_lr(optim):
+    # funkar oavsett scheduler; tar första param_group
+        return optim.param_groups[0]["lr"]
+    
     # ---- Fit ----
-    n_epochs = 10
+    n_epochs = 50
 
     start = time()
-    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
-
-    if args.profile:
-        model.train(True)
-        steps_to_profile = 120  # kort men representativt
-        prof_sched = schedule(wait=10, warmup=10, active=100, repeat=1)
-
-        with profile(
-            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-            schedule=prof_sched,
-            on_trace_ready=tensorboard_trace_handler("tb_logs/pcam"),
-            record_shapes=True,
-            profile_memory=True,
-            with_stack=False,     # sätt True om du vill ha call stacks (dyrare)
-        ) as prof:
-            it = iter(train_dl)
-            for step in range(steps_to_profile):
-                xb, yb = next(it)
-                xb = xb.to(DEVICE, non_blocking=True)
-                yb = yb.to(DEVICE, non_blocking=True).float()  # BCE
-
-                optimizer.zero_grad(set_to_none=True)
-                with torch.autocast(device_type=DEVICE.type, dtype=torch.float16, enabled=(DEVICE.type=="cuda")):
-                    logits = model(xb)
-                    loss = loss_fn(logits.view(-1), yb.view(-1))
-                loss.backward()
-                optimizer.step()
-
-                prof.step()  # VIKTIGT: steppa per träningssteg
-
-        # Skriv en snabb sammanfattning till terminalen
-        print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=30))
-        import sys; sys.exit(0)  # avsluta efter profilering (ta bort om du vill fortsätta träna)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3,
+                              threshold=1e-4)
 
     # ---- Main Loop ----
     for epoch in range(1, n_epochs + 1):
@@ -184,7 +177,8 @@ if __name__ == '__main__':
         train_loss_history.append(train_loss)
         val_loss_history.append(val_loss)
 
-        scheduler.step()
+        scheduler.step(val_loss)
+        lr = get_lr(optimizer)
 
         print(f"Epoch {epoch:02d} | "
             f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
@@ -219,8 +213,8 @@ if __name__ == '__main__':
                         worker_init_fn=seed_worker,
                         generator=g,
                         )
-    
-    evaluator = Evaluate(model, eval_dl, DEVICE)
+
+    evaluator = Evaluate(model, eval_dl, DEVICE, eval_tf=gpu_eval_tf)
     metrics = evaluator.evaluate()
 
     # Calculate model size

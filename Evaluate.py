@@ -4,12 +4,14 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
 class Evaluate:
-    def __init__(self, model, val_data: DataLoader, device):
+    def __init__(self, model, val_data: DataLoader, device, eval_tf=None):
         self.model = model
         self.device = device
         self.strObj = ['training_time', 'num_params', 'model_size']
         self.dataset = val_data
+        self.eval_tf = eval_tf
 
+    @torch.inference_mode()
     def evaluate(self):
         self.model.eval()
         with torch.no_grad():
@@ -17,19 +19,21 @@ class Evaluate:
             data_iter = iter(self.dataset)
             X, y = next(data_iter)
             X = X.to(self.device)
-            y = y.to(self.device)
+            y = y.to(self.device).long().view(-1)  # cross-entropy
+            if self.eval_tf is not None:
+                X = self.eval_tf(X)
 
             y_pred = self.model(X)
             # om cross-entropy:
-            # y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
-            # y_true = y.cpu().numpy()
+            y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
+            y_true = y.cpu().numpy()
 
             # om BCE:
-            logits = y_pred.view(-1)
-            targets = y.view(-1)
-            probs = torch.sigmoid(logits)
-            y_pred_labels = (probs >= 0.5).long().cpu().numpy()
-            y_true = targets.long().cpu().numpy()
+            # logits = y_pred.view(-1)
+            # targets = y.view(-1)
+            # probs = torch.sigmoid(logits)
+            # y_pred_labels = (probs >= 0.5).long().cpu().numpy()
+            # y_true = targets.long().cpu().numpy()
 
             accuracy = accuracy_score(y_true, y_pred_labels)
             precision = precision_score(y_true, y_pred_labels, zero_division=0)
