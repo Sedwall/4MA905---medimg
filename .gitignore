@@ -1,0 +1,11 @@
+# Ignore file of specific type
+*.pyc
+
+# Ignore directories
+
+__pycache__/
+.DS_Store
+.vscode/
+
+# Ignore file
+model.pt

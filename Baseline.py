@@ -1,17 +1,16 @@
 print("Good Day, setting up environment...")
 import torch as pt
+from time import time
 from pathlib import Path
-from sklearn.model_selection import train_test_split
 
 # Standard scikit-learn imports
 from sklearn.pipeline import Pipeline
-from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 # Import TDA pipeline requirements
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
-from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
+from gudhi.representations import PersistenceImage, DiagramSelector
 
 # Import for evaluation
 from Evaluate import Evaluate
@@ -19,7 +18,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 # Paths
 DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
-DATASET_FOLDER = Path(DIR.joinpath("./pcam_pt/"))
+DATASET_FOLDER = Path(DIR.joinpath("./pcam_BaseModel/"))
 
 # Load dataset
 X_train = pt.load(DATASET_FOLDER.joinpath("test_x.pt")).numpy()
@@ -27,6 +26,9 @@ y_train = pt.load(DATASET_FOLDER.joinpath("test_y.pt")).numpy().ravel()  # flatt
 
 X_test = pt.load(DATASET_FOLDER.joinpath("valid_x.pt"))[:1000].numpy()
 y_test = pt.load(DATASET_FOLDER.joinpath("valid_y.pt"))[:1000].numpy().ravel()  # flatten labels
+
+
+
 
 pipe = Pipeline(
     [
@@ -42,8 +44,13 @@ pipe = Pipeline(
 )
 
 # Learn from the train subset
-print("Fitting TDA pipeline...")
+print(f"Fitting TDA pipeline...")
+start = time()
 pipe.fit(X_train, y_train)
+
+elapsed = time() - start
+h, rem = divmod(elapsed, 3600)
+m, s   = divmod(rem, 60)
 
 # Evaluate
 print("Evaluating TDA pipeline...")
@@ -53,14 +60,14 @@ precision = precision_score(y_test, y_pred, zero_division=0)
 recall = recall_score(y_test, y_pred, zero_division=0)
 f1 = f1_score(y_test, y_pred, zero_division=0)
 roc_auc = roc_auc_score(y_test, y_pred)
-
-metrics_ = {
+metrics = {
     "accuracy": accuracy,
     "precision": precision,
     "recall": recall,
     "f1_score": f1,
-    "roc_auc": roc_auc
+    "roc_auc": roc_auc,
+    "training_time": f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
 }
 
-Evaluate.print_metrics(metrics_)
-Evaluate.save_metrics(metrics_, "metrics.txt")
+Evaluate.print_metrics(metrics)
+Evaluate.save_metrics(metrics, "metrics.txt")

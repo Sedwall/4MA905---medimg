@@ -3,9 +3,6 @@ import numpy as np
 import h5py
 from pathlib import Path
 
-from tqdm import tqdm
-import concurrent.futures
-
 """
 This script processes and saves the PCAM dataset in PyTorch format.
 It loads data from HDF5 files, processes it (e.g., normalization), and saves
@@ -22,13 +19,13 @@ If a .pt files already exist, the script will skip processing for that data.
 """
 # Choose which data to load
 TRAIN = False
-VALID = False
+VALID = True
 TEST = True
 
 # Set up directories
 DIR = Path(__file__).parent.parent.parent.joinpath("dataset")
 DATASET_FOLDER = Path(DIR.joinpath("./pcam/"))
-PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_pt_TDA/"))
+PROCESSED_DATA_FOLDER = Path(DIR.joinpath("./pcam_BaseModel/"))
 
 
 class DataProcessing:
