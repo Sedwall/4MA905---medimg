@@ -14,6 +14,8 @@ from time import time
 from torch.utils.data import DataLoader
 from Utilities.PCAMdataset import PCAMdataset
 from torchvision import transforms as T
+from tqdm import tqdm
+import json
 
 
 def seed_worker(worker_id):
@@ -21,9 +23,9 @@ def seed_worker(worker_id):
     numpy.random.seed(worker_seed)
     random.seed(worker_seed)
 
-g = torch.Generator()
-g.manual_seed(0)
-torch.manual_seed(0)
+# g = torch.Generator()
+# g.manual_seed(0)
+# torch.manual_seed(0)
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"  # 0=all, 1=info, 2=warning, 3=error
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # 0=all, 1=info, 2=warning, 3=error
@@ -45,7 +47,6 @@ if __name__ == '__main__':
     ])
 
     eval_tf  = T.Compose([
-        T.ToTensor(),
         T.Normalize(mean_gray, std_gray),
         # T.CenterCrop((32,32))
     ])
@@ -69,19 +70,18 @@ if __name__ == '__main__':
 
     train_dl = DataLoader(train_data, batch_size=512, shuffle=True,
                         num_workers=4, pin_memory=True, persistent_workers=True,
-                        worker_init_fn=seed_worker,
-                        generator=g,
+                        # worker_init_fn=seed_worker,
+                        # generator=g,
                         )
     val_dl   = DataLoader(test_data, batch_size=512, shuffle=False,
                         num_workers=4, pin_memory=True, persistent_workers=True,
-                        worker_init_fn=seed_worker,
-                        generator=g,
+                        # worker_init_fn=seed_worker,
+                        # generator=g,
                         )
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using {DEVICE} DEVICE")
     torch.backends.cudnn.benchmark = True  # good for fixed-size images
-
     # ---- Model, loss, optim ----
     model = Model().to(DEVICE)              # Model must output logits of shape [B, 2]
     loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
@@ -125,10 +125,11 @@ if __name__ == '__main__':
         return avg_loss, acc
 
     # ---- Fit ----
-    n_epochs = 20
+    n_epochs = 5
 
     start = time()
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
+    
 
     # ---- Main Loop ----
     for epoch in range(1, n_epochs + 1):
@@ -140,9 +141,9 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-        print(f"Epoch {epoch:02d} | "
-            f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
-            f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
+        # print(f"Epoch {epoch:02d} | "
+        #     f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
+        #     f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
         
 
     elapsed = time() - start
@@ -151,27 +152,20 @@ if __name__ == '__main__':
 
 
 
-    # ---- Save checkpoint ----
-    torch.save({
-        "model_state": model.state_dict(),
-        "epoch": n_epochs,
-    }, "model.pt")
-    print("Saved to model.pt")
+    # # ---- Save checkpoint ----
+    # torch.save({
+    #     "model_state": model.state_dict(),
+    #     "epoch": n_epochs,
+    # }, "model.pt")
+    # print("Saved to model.pt")
 
-    plt.figure()
-    plt.plot(range(1, len(train_loss_history)+1), train_loss_history, label="train")
-    plt.plot(range(1, len(val_loss_history)+1),   val_loss_history,   label="val")
-    plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.title("Loss per epoch")
-    plt.legend(); plt.tight_layout()
-    plt.savefig("plot.png", dpi=150)
-    print("Saved loss plot to plot.png")
 
     # Evaluate Model
-    N_eval_points = 2_000
+    N_eval_points = 1_000
     eval_dl = DataLoader(test_data, batch_size=N_eval_points, shuffle=False,
                         num_workers=4, pin_memory=True, persistent_workers=True,
-                        worker_init_fn=seed_worker,
-                        generator=g,
+                        # worker_init_fn=seed_worker,
+                        # generator=g,
                         )
     
     evaluator = Evaluate(model, eval_dl, DEVICE)
@@ -184,7 +178,26 @@ if __name__ == '__main__':
     metrics["model_size"] = f"{param_size_mb:.2f} MB"
     metrics["num_params"] = num_params
 
+
+    # save acc in jsonfile
+    if os.path.exists("accuracy.json"):
+        with open("accuracy.json", "r") as f:
+            runs = json.load(f)
+    else:
+        runs = []
+    
+    # Add the new accuracy
+    runs.append(metrics["accuracy"])
+
+    # Save it back
+    with open("accuracy.json", "w") as f:
+        json.dump(runs, f, indent=4)
     # Save and print metrics
     metrics["training_time"] = f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
-    evaluator.print_metrics(metrics)
-    evaluator.save_metrics(metrics, Path(__file__).parent / "metrics.txt")
+    # evaluator.print_metrics(metrics)
+    # evaluator.save_metrics(metrics, Path(__file__).parent / "metrics.txt")
+
+    std = np.array(runs).std()
+    print(f"acc. std {std:.4f} - N = {len(runs)}")
+    plt.plot(np.arange(len(runs)), runs)
+    plt.savefig("runs.png", dpi=150)

@@ -1,0 +1,12 @@
+===========================
+Model Evaluation Metrics
+===========================
+accuracy      :   0.8150
+precision     :   0.7969
+recall        :   0.8359
+f1_score      :   0.8159
+roc_auc       :   0.9010
+model_size    :  1.91 MB
+num_params    :   501810
+training_time : 00:01:02
+===========================

@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch as pt
+import torch.nn.init as init
 
 class Model(nn.Module):
     def __init__(self, chanels=16, dropout=.5):
@@ -23,6 +24,15 @@ class Model(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(256, 2),
         )
+        self._init_weights()
+
+    
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, (nn.Conv2d, nn.Linear)):
+                init.constant_(m.weight, 0.0)
+                if m.bias is not None:
+                    init.constant_(m.bias, 0.0)
 
     def forward(self, x):
         # x shape: (batch, 96, 96, 3)

@@ -1,0 +1,11 @@
+1. No set seed
+acc. std 0.0716 - N = 10
+
+2. Set seed
+acc. std 0.0155 - N = 10
+
+3. Set seed and Set weigts
+acc. std 0.0000 - N = 5
+
+4. Set weigts
+acc. std 0.0167 - N = 10
