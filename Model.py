@@ -20,7 +20,7 @@ class Model(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Dropout(dropout),
             nn.Flatten(),
-            nn.Linear(chanels*11*11, 256),
+            nn.Linear(288, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),
