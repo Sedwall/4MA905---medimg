@@ -1,16 +1,13 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as T
 import h5py
 import numpy as np
-from torchvision import transforms as T
-from tqdm import tqdm
-from torch.utils.data import DataLoader
 
 class PCAMdataset(Dataset):
-    def __init__(self, x_path, y_path, f_transform=None, transform=None, target_transform=None):
+    def __init__(self, x_path, y_path, transform=None, target_transform=None):
         self.x_path = x_path
         self.y_path = y_path
-        self.f_transform = f_transform
         self.transform = transform
         self.target_transform = target_transform
 
@@ -23,8 +20,7 @@ class PCAMdataset(Dataset):
             with h5py.File(self.y_path, "r") as fy:
                 assert "y" in fy, "Expected key 'y' in HDF5"
                 assert fy["y"].shape[0] == self.N, "x/y length mismatch"
-
-    
+        
         # file handles for caching and lazy loading
         self._xf = self._xd = None  
         self._yf = self._yd = None  
@@ -33,16 +29,11 @@ class PCAMdataset(Dataset):
         return self.N
     
     def __getitem__(self, idx):
-        img, feature, label = 0, 0, 0
         self._ensure_open()
         # Load image and preprocess
         img = torch.from_numpy(self._xd[idx]).float()
-        img = img.permute(2, 0, 1)  # Change to (C, H, W)
-
-        if self.f_transform is not None:
-            feature = self.f_transform(img.numpy())
         img = img / 255.0  # Rescale to [0, 1]
-
+        img = img.permute(2, 0, 1)  # Change to (C, H, W)
         # Handle image transformations
         if self.transform is not None:
             img = self.transform(img)
@@ -53,8 +44,10 @@ class PCAMdataset(Dataset):
             # Handle label transformation (probably unnecessary for binary labels) 
             if self.target_transform is not None:
                 label = self.target_transform(label)
+        else:
+            return img
         
-        return img, feature, label
+        return img, label
 
     def _ensure_open(self):
         """Ensure HDF5 files are open only once per worker."""
@@ -64,26 +57,3 @@ class PCAMdataset(Dataset):
         if self.y_path and self._yf is None:
             self._yf = h5py.File(self.y_path, "r")
             self._yd = self._yf["y"]
-
-
-
-def get_feature_dataset(x_path, y_path, feature_transform=None) -> tuple[torch.Tensor, torch.Tensor]:
-    # Create datasets
-    train_data = PCAMdataset(
-        x_path=x_path,
-        y_path=y_path,
-        f_transform=feature_transform,
-    )
-    
-    dl = DataLoader(train_data, batch_size=512, shuffle=False, num_workers=8, pin_memory=True)
-    features = None
-    labels = None
-    for _, f, l in tqdm(dl, desc="Extracting features"):
-        # Extend features and labels
-        if features is None:
-            features = f
-            labels = l
-        else:
-            features = torch.cat((features, f), dim=0)
-            labels = torch.cat((labels, l), dim=0)
-    return features, labels

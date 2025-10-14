@@ -1,5 +1,5 @@
 import numpy as np
-from Model import Model
+from HOG_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
