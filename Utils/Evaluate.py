@@ -1,5 +1,5 @@
 import torch
-from PCAMdataset import PCAMdataset
+from tqdm import tqdm
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
@@ -14,17 +14,24 @@ class Evaluate:
         self.model.eval()
         with torch.no_grad():
             # Get one big batch from the DataLoader
-            data_iter = iter(self.dataset)
-            X, F, y = next(data_iter)
-            X = X.to(self.device)
-            y = y.to(self.device)
-            
-            if F == None:
-                y_pred = self.model(X)
-            else:
-                y_pred = self.model(X, F)
+            y_pred = None
+            y_true = None
+            for X, F, y in tqdm(self.dataset):
+                X = X.to(self.device).float()
+                F = F.to(self.device).float()
+                y = y.to(self.device)
+                
+                if F == None:
+                    _y_pred = self.model(X)
+                else:
+                    _y_pred = self.model(X, F)
+        
+                y_pred = _y_pred if y_pred is None else torch.cat((y_pred, _y_pred), dim=0)
+
+                y_true = y if y_true is None else torch.cat((y_true, y), dim=0)
+                
             y_pred_labels = torch.argmax(y_pred, dim=1).cpu().numpy()
-            y_true = y.cpu().numpy()
+            y_true = y_true.cpu().numpy()
 
             accuracy = accuracy_score(y_true, y_pred_labels)
             precision = precision_score(y_true, y_pred_labels, zero_division=0)
