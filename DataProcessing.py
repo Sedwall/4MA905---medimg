@@ -124,7 +124,7 @@ class DataProcessing:
                             num_workers=1, pin_memory=True, persistent_workers=True)
 
         
-        for data_batch, _ in tqdm(train_dl):
+        for data_batch, _, _ in tqdm(train_dl):
             data_batch = self.process_data(data_batch)
             self.save_data(data_batch, PROCESSED_DATA_FOLDER / self.find_file(path))
             del data_batch
