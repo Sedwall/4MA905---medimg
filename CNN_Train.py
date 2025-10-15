@@ -1,26 +1,10 @@
 import numpy as np
-from HOG_Model import Model
+from CNN_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
 from Utils.Traning import traning_run
-from skimage.feature import hog
 
-
-
-####### Feature Extraction Function #######
-def feature_transform(img):
-    """ Example feature transformation: (C, H, W) """
-    img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
-    fd = hog(
-            img.astype(int),
-            orientations=8,
-            pixels_per_cell=(16, 16),
-            cells_per_block=(5, 5),
-            visualize=False,
-            channel_axis=-1,
-            )
-    return fd
 
 
 
@@ -51,14 +35,12 @@ if __name__ == '__main__':
     train_data = PCAMdataset(
         x_path=path_dir / 'pcam' / 'camelyonpatch_level_2_split_train_x.h5',
         y_path=path_dir / 'pcam' /'camelyonpatch_level_2_split_train_y.h5',
-        f_transform=feature_transform,
         transform=train_tf
     )
 
     test_data = PCAMdataset(
         x_path=path_dir / 'pcam' / 'camelyonpatch_level_2_split_test_x.h5',
         y_path=path_dir / 'pcam' / 'camelyonpatch_level_2_split_test_y.h5',
-        f_transform=feature_transform,
         transform=eval_tf
     )
 
