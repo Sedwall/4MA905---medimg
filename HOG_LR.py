@@ -1,5 +1,4 @@
 from sklearn.linear_model import LogisticRegression
-from sklearn import svm
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 from Utils.PCAMdataset import get_feature_dataset
 from Utils.Evaluate import Evaluate
@@ -33,7 +32,7 @@ if __name__ == '__main__':
 
     # Train a simple classifier
     start = time()
-    clf = svm.SVC()
+    clf = LogisticRegression(max_iter=1000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     h, rem = divmod(elapsed, 3600)
