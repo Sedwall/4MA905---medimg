@@ -74,7 +74,6 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
                 f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
                 f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
         
-        start = time()
 
         elapsed = time() - start
         h, rem = divmod(elapsed, 3600)
