@@ -5,7 +5,8 @@ from Utils.Evaluate import Evaluate
 from time import time
 
 
-
+########## Training Loop Function ##########
+#-- Helper function for the deep ML models --
 def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate]:
 
         train_dl = DataLoader(train_data, batch_size=batch_size, shuffle=True,
