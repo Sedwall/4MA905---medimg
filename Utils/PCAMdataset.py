@@ -67,18 +67,19 @@ class PCAMdataset(Dataset):
 
 
 
-def get_feature_dataset(x_path, y_path, feature_transform=None) -> tuple[torch.Tensor, torch.Tensor]:
+def get_feature_dataset(x_path, y_path, feature_transform=None, transform=None) -> tuple[torch.Tensor, torch.Tensor]:
     # Create datasets
     train_data = PCAMdataset(
         x_path=x_path,
         y_path=y_path,
+        transform=transform,
         f_transform=feature_transform,
     )
     
     dl = DataLoader(train_data, batch_size=512, shuffle=False, num_workers=8, pin_memory=True)
     features = None
     labels = None
-    for _, f, l in tqdm(dl, desc="Extracting features"):
+    for x, f, l in tqdm(dl, desc="Extracting features"):
         # Extend features and labels
         if features is None:
             features = f
@@ -86,4 +87,4 @@ def get_feature_dataset(x_path, y_path, feature_transform=None) -> tuple[torch.T
         else:
             features = torch.cat((features, f), dim=0)
             labels = torch.cat((labels, l), dim=0)
-    return features, labels
+    return x, features, labels
