@@ -1,4 +1,4 @@
-from torch import nn, optim
+from torch import nn
 import torch
 from torch.utils.data import DataLoader
 from Utils.Evaluate import Evaluate
@@ -83,7 +83,5 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         evaluator = Evaluate(model, eval_dl, DEVICE)
         # Calculate model size
         metrics = evaluator.evaluate()
-
-        metrics["training_time"] = elapsed
-        
+        metrics['training_time'] = elapsed
         return model, metrics, evaluator

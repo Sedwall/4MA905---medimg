@@ -34,7 +34,7 @@ def feature_transform(data: np.ndarray) -> np.ndarray:
 
 if __name__ == '__main__':
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 1
+    N_RUNS = 10
     BATCH_SIZE = 512
     N_EPOCHS = 20
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
         ## Define loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
         model, metrics, evaluator = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
 
         if not Path(__file__).parent.joinpath("runs").exists():

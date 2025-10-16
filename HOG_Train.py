@@ -70,7 +70,7 @@ if __name__ == '__main__':
         model = Model(chanels=16, dropout=0.5)
         ## Define loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
 
         model, metrics, evaluator = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
 

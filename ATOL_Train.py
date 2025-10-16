@@ -52,9 +52,9 @@ def feature_transform(data: torch.Tensor, atol_vectoriser=atol_vectoriser) -> np
 
 if __name__ == '__main__':
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 1
-    BATCH_SIZE = 512*3
-    N_EPOCHS = 4
+    N_RUNS = 10
+    BATCH_SIZE = 512
+    N_EPOCHS = 20
 
 
     mean = [0.7008, 0.5384, 0.6916]
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     for i in range(N_RUNS):
         model = Model(chanels=16, dropout=0.5)
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
 
         model, metrics, evaluator = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
 

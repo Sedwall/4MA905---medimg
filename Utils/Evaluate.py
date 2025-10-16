@@ -4,8 +4,10 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
 def time_convert(elapsed):
-    h, rem = divmod(elapsed, 3600)
-    m, s   = divmod(rem, 60)
+    # assert isinstance(elapsed, float), "Elapsed time must be a number"
+
+    h, rem = divmod(float(elapsed), 3600)
+    m, s   = divmod(float(rem), 60)
     return f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
 
 
@@ -60,30 +62,33 @@ class Evaluate:
         }
     
     def save_metrics(self, metrics, filepath):
-        if 'training_time' in metrics:
-            metrics['training_time'] = time_convert(metrics['training_time'])
+        _metrics = metrics.copy()
+        if 'training_time' in _metrics:
+            _metrics['training_time'] = time_convert(_metrics['training_time'])
 
-        longest_name = max(len(m) for m in metrics.keys())
+        longest_name = max(len(m) for m in _metrics.keys())
         with open(filepath, 'w') as f:
             f.write("=" * (longest_name + 14) + "\n")
             f.write("Model Evaluation Metrics\n")
             f.write("=" * (longest_name + 14) + "\n")
-            for metric, value in metrics.items():
+            for metric, value in _metrics.items():
                 if metric in self.strObj: f.write(f"{metric:<{longest_name}} : {value:>8}\n")
                 else: f.write(f"{metric:<{longest_name}} : {value:>8.4f}\n")
             f.write("=" * (longest_name + 14) + "\n")
         print(f"Metrics saved to {filepath}")
 
 
-    def print_metrics(self, metrics):
-        if 'training_time' in metrics:
-            metrics['training_time'] = time_convert(metrics['training_time'])
+    def print_metrics(self, _metrics):
+        _metrics = _metrics.copy()
+
+        if 'training_time' in _metrics:
+            _metrics['training_time'] = time_convert(_metrics['training_time'])
         
-        longest_name = max(len(m) for m in metrics.keys())
+        longest_name = max(len(m) for m in _metrics.keys())
         print("=" * (longest_name + 14))
         print("Model Evaluation Metrics")
         print("=" * (longest_name + 14))
-        for metric, value in metrics.items():
+        for metric, value in _metrics.items():
             if metric in self.strObj: print(f"{metric:<{longest_name}} : {value:>8}")
             else: print(f"{metric:<{longest_name}} : {value:>8.4f}")
         print("=" * (longest_name + 14))
