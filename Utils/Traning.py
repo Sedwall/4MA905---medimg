@@ -83,7 +83,7 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         evaluator = Evaluate(model, eval_dl, DEVICE)
         # Calculate model size
         metrics = evaluator.evaluate()
-        
-        # Save and print metrics
+
         metrics["training_time"] = elapsed
+        
         return model, metrics, evaluator

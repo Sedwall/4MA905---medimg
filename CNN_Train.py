@@ -67,6 +67,6 @@ if __name__ == '__main__':
             AVG_metrics[key] /= N_RUNS
 
     print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
-    evaluator.print_metrics(metrics)
+    evaluator.print_metrics(AVG_metrics)
     file_name = str(__file__).split('/')[-1].split('.')[0]
-    evaluator.save_metrics(metrics, Path(__file__).parent/ f"{file_name}_final_metrics.txt")
+    evaluator.save_metrics(AVG_metrics, Path(__file__).parent/ f"{file_name}_final_metrics.txt")

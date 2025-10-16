@@ -3,6 +3,13 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
+def time_convert(elapsed):
+    h, rem = divmod(elapsed, 3600)
+    m, s   = divmod(rem, 60)
+    return f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
+
+
+
 class Evaluate:
     def __init__(self, model, val_data: DataLoader, device):
         self.model = model
@@ -53,6 +60,9 @@ class Evaluate:
         }
     
     def save_metrics(self, metrics, filepath):
+        if 'training_time' in metrics:
+            metrics['training_time'] = time_convert(metrics['training_time'])
+
         longest_name = max(len(m) for m in metrics.keys())
         with open(filepath, 'w') as f:
             f.write("=" * (longest_name + 14) + "\n")
@@ -66,6 +76,9 @@ class Evaluate:
 
 
     def print_metrics(self, metrics):
+        if 'training_time' in metrics:
+            metrics['training_time'] = time_convert(metrics['training_time'])
+        
         longest_name = max(len(m) for m in metrics.keys())
         print("=" * (longest_name + 14))
         print("Model Evaluation Metrics")
