@@ -11,6 +11,7 @@ from gudhi.representations.vector_methods import Atol
 from gudhi import CubicalComplex
 import pickle
 import torch
+from torch import nn, optim
 
 
 # # Setting up directory
@@ -92,7 +93,10 @@ if __name__ == '__main__':
     AVG_metrics = {}
     for i in range(N_RUNS):
         model = Model(chanels=16, dropout=0.5)
-        model, metrics, evaluator = traning_run(model, train_data, test_data, BATCH_SIZE, N_EPOCHS)
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+        model, metrics, evaluator = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
 
         if not Path(__file__).parent.joinpath("runs").exists():
             Path(__file__).parent.joinpath("runs").mkdir()
