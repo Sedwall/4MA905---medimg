@@ -11,14 +11,15 @@ from time import time
 ####### Feature Extraction Function #######
 def feature_transform(img:np.ndarray) -> np.ndarray:
     """ Example feature transformation: (C, H, W) """
-    img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
+    img = img.mean(axis=0)  # Convert to grayscale (H, W)
+    # img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
     fd = hog(
             img.astype(int),
-            orientations=8,
-            pixels_per_cell=(16, 16),
-            cells_per_block=(5, 5),
+            orientations=12,
+            pixels_per_cell=(24, 24),
+            cells_per_block=(2, 2),
             visualize=False,
-            channel_axis=-1,
+            channel_axis=None,
             )
     return fd
 

@@ -1,0 +1,166 @@
+
+grayscale = img.mean(axis=0)
+orientations=12,
+pixels_per_cell=(24, 24),
+cells_per_block=(2, 2),
+visualize=False,
+channel_axis=None,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6598
+precision     :   0.6448
+recall        :   0.7109
+f1_score      :   0.6762
+roc_auc       :   0.6598
+training_time : 00:00:07
+===========================
+
+
+
+orientations=8,
+pixels_per_cell=(32, 32),
+cells_per_block=(1, 1),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6089
+precision     :   0.5738
+recall        :   0.8448
+f1_score      :   0.6834
+roc_auc       :   0.6090
+training_time : 00:00:05
+===========================
+
+
+orientations=8,
+pixels_per_cell=(32, 32),
+cells_per_block=(1, 1),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.5907
+precision     :   0.5594
+recall        :   0.8518
+f1_score      :   0.6753
+roc_auc       :   0.5908
+training_time : 00:00:03
+===========================
+
+
+
+orientations=20,
+pixels_per_cell=(32, 32),
+cells_per_block=(1, 1),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6241
+precision     :   0.5983
+recall        :   0.7541
+f1_score      :   0.6672
+roc_auc       :   0.6241
+training_time : 00:00:04
+===========================
+
+
+
+orientations=8,
+pixels_per_cell=(32, 32),
+cells_per_block=(2, 2),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6365
+precision     :   0.6114
+recall        :   0.7482
+f1_score      :   0.6729
+roc_auc       :   0.6366
+training_time : 00:00:06
+===========================
+
+
+
+orientations=8,
+pixels_per_cell=(24, 24),
+cells_per_block=(1, 1),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6037
+precision     :   0.5685
+recall        :   0.8594
+f1_score      :   0.6843
+roc_auc       :   0.6038
+training_time : 00:00:03
+===========================
+
+
+orientations=8,
+pixels_per_cell=(24, 24),
+cells_per_block=(2, 2),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6400
+precision     :   0.6156
+recall        :   0.7448
+f1_score      :   0.6741
+roc_auc       :   0.6401
+training_time : 00:00:10
+===========================
+
+
+orientations=12,
+pixels_per_cell=(24, 24),
+cells_per_block=(2, 2),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6594
+precision     :   0.6420
+recall        :   0.7202
+f1_score      :   0.6788
+roc_auc       :   0.6594
+training_time : 00:00:10
+===========================
+
+
+
+orientations=16,
+pixels_per_cell=(24, 24),
+cells_per_block=(2, 2),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.6554
+precision     :   0.6386
+recall        :   0.7153
+f1_score      :   0.6748
+roc_auc       :   0.6554
+training_time : 00:00:10
+===========================
+
+
+
+orientations=8,
+pixels_per_cell=(24, 24),
+cells_per_block=(3, 3),
+visualize=False,
+channel_axis=-1,
+Model Evaluation Metrics
+===========================
+accuracy      :   0.5959
+precision     :   0.5739
+recall        :   0.7429
+f1_score      :   0.6476
+roc_auc       :   0.5959
+training_time : 00:00:09
+===========================

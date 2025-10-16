@@ -1,0 +1,93 @@
+
+bandwidth=50,
+weight=lambda x: x[1] ** 2,
+im_range=[0, 256, 0, 256],
+resolution=[6, 5],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7704
+precision     :   0.8007
+recall        :   0.7197
+f1_score      :   0.7580
+roc_auc       :   0.7704
+training_time : 00:00:58
+===========================
+
+
+bandwidth=50,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[6, 5],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7768
+precision     :   0.8040
+recall        :   0.7318
+f1_score      :   0.7662
+roc_auc       :   0.7767
+training_time : 00:00:04
+===========================
+
+
+
+bandwidth=50,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[10, 10],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7834
+precision     :   0.8048
+recall        :   0.7482
+f1_score      :   0.7755
+roc_auc       :   0.7834
+training_time : 00:00:09
+===========================
+
+
+
+bandwidth=50,
+weight=lambda x: x[1]**2,
+im_range=[0, 256, 0, 256],
+resolution=[10, 10],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7813
+precision     :   0.8053
+recall        :   0.7417
+f1_score      :   0.7722
+roc_auc       :   0.7813
+training_time : 00:06:14
+===========================
+
+
+
+bandwidth=50,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[16, 16],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7845
+precision     :   0.8051
+recall        :   0.7503
+f1_score      :   0.7768
+roc_auc       :   0.7844
+training_time : 00:00:16
+===========================
+
+
+
+bandwidth=25,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[16, 16],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7921
+precision     :   0.8091
+recall        :   0.7644
+f1_score      :   0.7861
+roc_auc       :   0.7921
+training_time : 00:00:42
+===========================

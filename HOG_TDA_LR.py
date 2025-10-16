@@ -21,23 +21,22 @@ def feature_transform(data:np.ndarray) -> np.ndarray:
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         ("pers_img", PersistenceImage(
             bandwidth=50,
-            weight=lambda x: x[1] ** 2,
+            weight=lambda x: x[1],
             im_range=[0, 256, 0, 256],
-            resolution=[10, 10],
+            resolution=[16, 16],
         )),
     ])
 
-    img = np.transpose(data, (1, 2, 0)) # Convert to (H, W, C) for skimage
+    gray_scale = data.mean(axis=0)  # Convert to grayscale
     hog_f = hog(
-            img.astype(int),
-            orientations=8,
-            pixels_per_cell=(16, 16),
-            cells_per_block=(5, 5),
+            gray_scale.astype(int),
+            orientations=12,
+            pixels_per_cell=(24, 24),
+            cells_per_block=(2, 2),
             visualize=False,
-            channel_axis=-1,
+            channel_axis=None,
             )
 
-    gray_scale = data.mean(axis=0)  # Convert to grayscale
     feature_vector = feature_pipe.fit_transform([gray_scale])
 
     fd = np.concatenate((hog_f, feature_vector[0]))

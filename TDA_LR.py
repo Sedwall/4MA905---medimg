@@ -19,10 +19,10 @@ def feature_transform(data: np.ndarray) -> np.ndarray:
         ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         ("pers_img", PersistenceImage(
-            bandwidth=50,
-            weight=lambda x: x[1] ** 2,
-            im_range=[0, 256, 0, 256],
-            resolution=[10, 10],
+bandwidth=25,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[16, 16],
         )),
     ])
     feature_vector = feature_pipe.fit_transform([gray_scale])
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # Train a simple classifier
     start = time()
-    clf = LogisticRegression(max_iter=30_000, n_jobs=-1)
+    clf = LogisticRegression(max_iter=10_000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     del X_train, y_train
