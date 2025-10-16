@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch as pt
 
 class Model(nn.Module):
-    def __init__(self, chanels=16, dropout=.5):
+    def __init__(self, chanels=16, dropout=.8):
         super(Model, self).__init__()
         self.CNNlayers = nn.Sequential(
             nn.Conv2d(3, chanels, kernel_size=4, stride=1, padding=1),
@@ -16,11 +16,11 @@ class Model(nn.Module):
             nn.Conv2d(chanels, chanels, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(dropout),
             nn.Flatten(),
         )
         self.dis = nn.Sequential(
-            nn.Linear(chanels*11*11 + 40, 256),
+            nn.Dropout(dropout),
+            nn.Linear(chanels*11*11 + 100, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),

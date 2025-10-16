@@ -4,23 +4,29 @@ from Utils.PCAMdataset import get_entire_dataset
 from Utils.Evaluate import Evaluate
 from pathlib import Path
 import numpy as np
-from skimage.feature import hog
 from time import time
+# Import TDA pipeline requirements
+from sklearn.pipeline import Pipeline
+from gudhi.sklearn.cubical_persistence import CubicalPersistence
+from gudhi.representations import PersistenceImage, DiagramSelector
 
 
-####### Feature Extraction Function #######
-def feature_transform(img:np.ndarray) -> np.ndarray:
-    """ Example feature transformation: (C, H, W) """
-    img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
-    fd = hog(
-            img.astype(int),
-            orientations=8,
-            pixels_per_cell=(16, 16),
-            cells_per_block=(5, 5),
-            visualize=False,
-            channel_axis=-1,
-            )
-    return fd
+# --- Define this at the top level (so it can be pickled) ---
+def feature_transform(data: np.ndarray) -> np.ndarray:
+    gray_scale = data.mean(axis=0)  # Convert to grayscale
+
+    feature_pipe = Pipeline([
+        ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
+        ("finite_diags", DiagramSelector(use=True, point_type="finite")),
+        ("pers_img", PersistenceImage(
+            bandwidth=50,
+            weight=lambda x: x[1] ** 2,
+            im_range=[0, 256, 0, 256],
+            resolution=[10, 10],
+        )),
+    ])
+    feature_vector = feature_pipe.fit_transform([gray_scale])
+    return feature_vector[0]
 
 if __name__ == '__main__':
     DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
@@ -32,7 +38,7 @@ if __name__ == '__main__':
 
     # Train a simple classifier
     start = time()
-    clf = LogisticRegression(max_iter=1000, n_jobs=-1)
+    clf = LogisticRegression(max_iter=30_000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     del X_train, y_train
@@ -61,4 +67,5 @@ if __name__ == '__main__':
 
     evaluator = Evaluate(model=None, val_data=None, device=None)
     evaluator.print_metrics(metrics)
-    evaluator.save_metrics(metrics, Path("./HOG_LR_metrics.txt"))
+    file_name = str(__file__).split('/')[-1].split('.')[0]
+    evaluator.save_metrics(metrics,  Path(__file__).parent/ f"{file_name}_final_metrics.txt")
