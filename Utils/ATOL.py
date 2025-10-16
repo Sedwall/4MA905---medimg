@@ -1,10 +1,11 @@
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
+import pickle
 from sklearn.cluster import KMeans
 from gudhi.representations.vector_methods import Atol
 from gudhi import CubicalComplex
-from Utils.PCAMdataset import get_feature_dataset
+from Utils.PCAMdataset import get_entire_dataset
 from torchvision import transforms as T
 
 
@@ -16,35 +17,50 @@ def get_feature_extractor(path_dir:Path):
         n_clusters (int): Number of clusters for KMeans.
         atol_params (dict): Parameters for the Atol transformer.
     """
-    mean = [0.7008, 0.5384, 0.6916]
-    std = [0.2350, 0.2774, 0.2129]
-    # Define transforms
-    train_tf = T.Compose([
-        T.Normalize(mean, std), # standardize
-        T.Grayscale(num_output_channels=1), # convert to grayscale
-    ])
 
-    data, _, _ = get_feature_dataset(
-        x_path=path_dir / 'pcam' / 'camelyonpatch_level_2_split_valid_x.h5',
-        y_path=path_dir / 'pcam' /'camelyonpatch_level_2_split_valid_y.h5',
-        transform=train_tf
-        )
+
+    if not Path(__file__).parent.joinpath("atol_vectoriser.pkl").exists():
+            
+        mean = [0.7008, 0.5384, 0.6916]
+        std = [0.2350, 0.2774, 0.2129]
+        # Define transforms
+        train_tf = T.Compose([
+            T.Normalize(mean, std), # standardize
+            T.Grayscale(num_output_channels=1), # convert to grayscale
+        ])
+
+        data, _, _ = get_entire_dataset(
+            x_path=path_dir / 'pcam' / 'camelyonpatch_level_2_split_valid_x.h5',
+            y_path=path_dir / 'pcam' /'camelyonpatch_level_2_split_valid_y.h5',
+            transform=train_tf
+            )
+        
+        diagrams = []
+        for i in tqdm(range(data.shape[0]), desc="Computing persistence diagrams"):
+            diag = image_to_persistence(data[i], homology_coeff=2, min_persistence=0.0)
+            diagrams.append(diag)
+        
+        atol_vectoriser = Atol(quantiser=KMeans(n_clusters=40, random_state=202006, n_init=10))
+        atol_vectoriser.fit(X=diagrams).centers
+
+        # --- Save (pickle) the model ---
+        with open(Path(__file__).parent / "atol_vectoriser.pkl", "wb") as file:
+            pickle.dump(atol_vectoriser, file)
+
+
+        
+        # Save the fitted vectoriser
+        if not Path(__file__).parent.joinpath("runs").exists():
+            Path(__file__).parent.joinpath("runs").mkdir()
+        np.save(Path(__file__).parent / "runs" / f"atol_vectoriser.npy", atol_vectoriser.centers)
     
-    diagrams = []
-    for i in tqdm(range(data.shape[0]), desc="Computing persistence diagrams"):
-        diag = image_to_persistence(data[i], homology_coeff=2, min_persistence=0.0)
-        diagrams.append(diag)
-    
-    atol_vectoriser = Atol(quantiser=KMeans(n_clusters=40, random_state=202006, n_init=10))
-    atol_vectoriser.fit(X=diagrams).centers
+    else:
+        # --- Load the model ---
+        with open(Path(__file__).parent / "atol_vectoriser.pkl", "rb") as file:
+            atol_vectoriser = pickle.load(file)
 
-    ####### Feature Extraction Function #######
-    def feature_transform(img:np.ndarray, atol_vectoriser=atol_vectoriser) -> np.ndarray:
-        """ Example feature transformation: (C, H, W) """
-        feature_vector = atol_vectoriser.transform(image_to_persistence(img, homology_coeff=2, min_persistence=0.0))
-        return feature_vector
 
-    return feature_transform
+    return atol_vectoriser
 
 def image_to_persistence(img: np.ndarray,
                          homology_coeff: int = 2,
@@ -55,10 +71,10 @@ def image_to_persistence(img: np.ndarray,
     """
     # Optionally invert the intensities so that bright features become low
     
-    img2 = img.copy()
-    H, W = img2.shape
+    img = img.squeeze(0)
+    H, W = img.shape
     # Flatten top-dimensional cells
-    flat = img2.flatten()
+    flat = img.flatten()
     # Build cubical complex
     cc = CubicalComplex(dimensions=[H, W], top_dimensional_cells=flat)
     # Compute persistence
@@ -66,4 +82,5 @@ def image_to_persistence(img: np.ndarray,
                            min_persistence=min_persistence)
     # Get diagram
     diag = cc.persistence()
+    diag = [pair[1] for pair in diag if pair[0] == 0]  # Keep only H0
     return np.array(diag)

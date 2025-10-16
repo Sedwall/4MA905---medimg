@@ -77,8 +77,6 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
         
 
         elapsed = time() - start
-        h, rem = divmod(elapsed, 3600)
-        m, s   = divmod(rem, 60)
 
         # Evaluate Model
         eval_dl = DataLoader(test_data, batch_size=batch_size, shuffle=False,
@@ -89,5 +87,5 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
         metrics = evaluator.evaluate()
         
         # Save and print metrics
-        metrics["training_time"] = f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
+        metrics["training_time"] = elapsed
         return model, metrics, evaluator
