@@ -1,7 +1,6 @@
 from sklearn.linear_model import LogisticRegression
-from sklearn import svm
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
-from Utils.PCAMdataset import get_feature_dataset
+from Utils.PCAMdataset import get_entire_dataset
 from Utils.Evaluate import Evaluate
 from pathlib import Path
 import numpy as np
@@ -26,21 +25,21 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
 if __name__ == '__main__':
     DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
 
-    X_train, y_train= get_feature_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_train_x.h5",
+    _, X_train, y_train= get_entire_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_train_x.h5",
                                         y_path=DATA_PATH / "camelyonpatch_level_2_split_train_y.h5",
                                         feature_transform=feature_transform)
     print(f"Feature shape: {tuple(X_train.shape)}, Labels shape: {tuple(y_train.shape)}")
 
     # Train a simple classifier
     start = time()
-    clf = svm.SVC()
+    clf = LogisticRegression(max_iter=1000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     h, rem = divmod(elapsed, 3600)
     m, s   = divmod(rem, 60)
     del X_train, y_train
 
-    X_test, y_test = get_feature_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_test_x.h5",
+    _, X_test, y_test = get_entire_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_test_x.h5",
                                         y_path=DATA_PATH / "camelyonpatch_level_2_split_test_y.h5",
                                         feature_transform=feature_transform)
     y_pred = clf.predict(X_test)

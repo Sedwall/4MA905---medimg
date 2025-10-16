@@ -67,7 +67,7 @@ class PCAMdataset(Dataset):
 
 
 
-def get_feature_dataset(x_path, y_path, feature_transform=None, transform=None) -> tuple[torch.Tensor, torch.Tensor]:
+def get_entire_dataset(x_path, y_path, feature_transform=None, transform=None) -> tuple[torch.Tensor, torch.Tensor]:
     # Create datasets
     train_data = PCAMdataset(
         x_path=x_path,

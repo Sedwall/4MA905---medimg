@@ -20,7 +20,7 @@ class Model(nn.Module):
             nn.Flatten(),
         )
         self.dis = nn.Sequential(
-            nn.Linear(chanels*11*11 + 40, 256),
+            nn.Linear(chanels*11*11 + 30, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),

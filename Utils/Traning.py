@@ -7,7 +7,7 @@ from time import time
 
 ########## Training Loop Function ##########
 #-- Helper function for the deep ML models --
-def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate]:
+def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate]:
 
         train_dl = DataLoader(train_data, batch_size=batch_size, shuffle=True,
                             num_workers=8, pin_memory=True, persistent_workers=True,
@@ -20,9 +20,7 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
         torch.backends.cudnn.benchmark = True  # good for fixed-size images
 
         # ---- Model, loss, optim ----
-        model = model.to(DEVICE)              # Model must output logits of shape [B, 2]
-        loss_fn = nn.CrossEntropyLoss()         # targets: int64 class ids (0/1)
-        optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        model = model.to(DEVICE) # Model must output logits of shape [B, 2]
 
         # ---- Training / Eval loops ----
         def run_epoch(loader, model, optimizer, train=True):
@@ -77,8 +75,6 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
         
 
         elapsed = time() - start
-        h, rem = divmod(elapsed, 3600)
-        m, s   = divmod(rem, 60)
 
         # Evaluate Model
         eval_dl = DataLoader(test_data, batch_size=batch_size, shuffle=False,
@@ -89,5 +85,5 @@ def traning_run(model, train_data, test_data, batch_size, N_EPOCHS) -> tuple[nn.
         metrics = evaluator.evaluate()
         
         # Save and print metrics
-        metrics["training_time"] = f"{int(h):02d}:{int(m):02d}:{int(s):02d}"
+        metrics["training_time"] = elapsed
         return model, metrics, evaluator
