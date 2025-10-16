@@ -19,8 +19,20 @@ class Model(nn.Module):
             nn.Dropout(dropout),
             nn.Flatten(),
         )
+
+        self.HOGLayer = nn.Sequential(
+            nn.Linear(800, 256), # 800 is the HOG feature size
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 128),
+            
+        )
+
         self.dis = nn.Sequential(
-            nn.Linear(chanels*11*11 + 800, 256), # chanels*11*11+800
+            nn.Linear(chanels*11*11 + 128, 256), # chanels*11*11+800
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),
@@ -30,6 +42,7 @@ class Model(nn.Module):
         # x shape: (batch, 96, 96, 3)
         assert x.shape[1:] == (3, 96, 96)
         x = self.CNNlayers(x)
+        F = self.HOGLayer(F)
         x = pt.concat([x, F], dim=1)
         x = self.dis(x)
         return x
