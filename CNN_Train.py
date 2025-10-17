@@ -11,9 +11,9 @@ from torch import nn, optim
 if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 4
+    N_RUNS = 5
     BATCH_SIZE = 512
-    N_EPOCHS = 1
+    N_EPOCHS = 20
 
     mean = [0.7008, 0.5384, 0.6916]
     std = [0.2350, 0.2774, 0.2129]
@@ -67,5 +67,6 @@ if __name__ == '__main__':
             else:
                 AVG_metrics[key] = [value]
 
+
     # Calculate and print average metrics
-    metrics_avg(evaluator, AVG_metrics, metrics, __file__)
+    metrics_avg(evaluator, AVG_metrics, __file__)

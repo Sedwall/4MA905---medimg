@@ -32,7 +32,7 @@ class Model(nn.Module):
         )
 
         self.dis = nn.Sequential(
-            nn.Linear(chanels*11*11 + 128, 256), # chanels*11*11+800
+            nn.Linear(chanels*11*11 + 432, 256), # chanels*11*11+800
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),

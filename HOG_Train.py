@@ -3,23 +3,24 @@ from HOG_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import traning_run
+from Utils.Traning import traning_run, metrics_avg
 from skimage.feature import hog
 from torch import nn, optim
 
 
 
 ####### Feature Extraction Function #######
-def feature_transform(img):
+def feature_transform(img:np.ndarray) -> np.ndarray:
     """ Example feature transformation: (C, H, W) """
-    img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
+    img = img.mean(axis=0)  # Convert to grayscale (H, W)
+    # img = np.transpose(img, (1, 2, 0)) # Convert to (H, W, C) for skimage
     fd = hog(
             img.astype(int),
-            orientations=8,
-            pixels_per_cell=(16, 16),
-            cells_per_block=(5, 5),
+            orientations=12,
+            pixels_per_cell=(24, 24),
+            cells_per_block=(2, 2),
             visualize=False,
-            channel_axis=-1,
+            channel_axis=None,
             )
     return fd
 
@@ -77,19 +78,13 @@ if __name__ == '__main__':
         if not Path(__file__).parent.joinpath("runs").exists():
             Path(__file__).parent.joinpath("runs").mkdir()
         evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
-
+        
         for key, value in zip(metrics.keys(), metrics.values()):
-            if key in AVG_metrics.keys() and isinstance(value, float):
-                AVG_metrics[key] += value
+            if key in AVG_metrics.keys():
+                AVG_metrics[key].append(value)
             else:
-                AVG_metrics[key] = value
+                AVG_metrics[key] = [value]
 
 
-    for key, value in zip(AVG_metrics.keys(), AVG_metrics.values()):
-        if isinstance(value, float):
-            AVG_metrics[key] /= N_RUNS
-
-    print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
-    evaluator.print_metrics(AVG_metrics)
-    file_name = str(__file__).split('/')[-1].split('.')[0]
-    evaluator.save_metrics(AVG_metrics, Path(__file__).parent/ f"{file_name}_final_metrics.txt")
+    # Calculate and print average metrics
+    metrics_avg(evaluator, AVG_metrics, __file__)

@@ -3,7 +3,7 @@ from Landscape_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import traning_run
+from Utils.Traning import traning_run, metrics_avg
 from torch import nn, optim
 
 # Import TDA pipeline requirements
@@ -103,19 +103,13 @@ if __name__ == '__main__':
         if not Path(__file__).parent.joinpath("runs").exists():
             Path(__file__).parent.joinpath("runs").mkdir()
         evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
-
+        
         for key, value in zip(metrics.keys(), metrics.values()):
-            if key in AVG_metrics.keys() and isinstance(value, float):
-                AVG_metrics[key] += value
+            if key in AVG_metrics.keys():
+                AVG_metrics[key].append(value)
             else:
-                AVG_metrics[key] = value
+                AVG_metrics[key] = [value]
 
 
-    for key, value in zip(AVG_metrics.keys(), AVG_metrics.values()):
-        if isinstance(value, float):
-            AVG_metrics[key] /= N_RUNS
-
-    print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
-    evaluator.print_metrics(AVG_metrics)
-    file_name = str(__file__).split('/')[-1].split('.')[0]
-    evaluator.save_metrics(AVG_metrics, Path(__file__).parent/ f"{file_name}_final_metrics.txt")
+    # Calculate and print average metrics
+    metrics_avg(evaluator, AVG_metrics, __file__)

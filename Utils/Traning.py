@@ -90,18 +90,19 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
 
 
 
-def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, metrics: dict, file):
-     for key, value in list(AVG_metrics.items()):
+def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, file):
+    AUC_STD = np.std(AVG_metrics['roc_auc'])
+    ACC_STD = np.std(AVG_metrics['accuracy'])
+    
+    for key, value in list(AVG_metrics.items()):
         if isinstance(value, float):
             AVG_metrics[key] = np.mean(value).item()
 
-        AUC_STD = np.std(metrics['roc_auc'])
-        ACC_STD = np.std(metrics['accuracy'])
 
-        AVG_metrics['roc_auc_std'] = AUC_STD.item()
-        AVG_metrics['accuracy_std'] = ACC_STD.item()
+    AVG_metrics['roc_auc_std'] = AUC_STD.item()
+    AVG_metrics['accuracy_std'] = ACC_STD.item()
 
-        print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
-        evaluator.print_metrics(AVG_metrics)
-        file_name = str(file).split('/')[-1].split('.')[0]
-        evaluator.save_metrics(AVG_metrics, Path(file).parent/ f"{file_name}_final_metrics.txt")
+    print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
+    evaluator.print_metrics(AVG_metrics)
+    file_name = str(file).split('/')[-1].split('.')[0]
+    evaluator.save_metrics(AVG_metrics, Path(file).parent/ f"{file_name}_final_metrics.txt")
