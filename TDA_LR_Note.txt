@@ -1,3 +1,17 @@
+bandwidth=25,
+weight=lambda x: x[1],
+im_range=[0, 256, 0, 256],
+resolution=[16, 16],
+Model Evaluation Metrics
+===========================
+accuracy      :   0.7921
+precision     :   0.8091
+recall        :   0.7644
+f1_score      :   0.7861
+roc_auc       :   0.7921
+training_time : 00:00:42
+===========================
+
 
 bandwidth=50,
 weight=lambda x: x[1] ** 2,
@@ -77,17 +91,3 @@ training_time : 00:00:16
 ===========================
 
 
-
-bandwidth=25,
-weight=lambda x: x[1],
-im_range=[0, 256, 0, 256],
-resolution=[16, 16],
-Model Evaluation Metrics
-===========================
-accuracy      :   0.7921
-precision     :   0.8091
-recall        :   0.7644
-f1_score      :   0.7861
-roc_auc       :   0.7921
-training_time : 00:00:42
-===========================

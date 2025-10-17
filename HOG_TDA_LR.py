@@ -20,7 +20,7 @@ def feature_transform(data:np.ndarray) -> np.ndarray:
         ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         ("pers_img", PersistenceImage(
-            bandwidth=50,
+            bandwidth=25,
             weight=lambda x: x[1],
             im_range=[0, 256, 0, 256],
             resolution=[16, 16],
@@ -30,9 +30,9 @@ def feature_transform(data:np.ndarray) -> np.ndarray:
     gray_scale = data.mean(axis=0)  # Convert to grayscale
     hog_f = hog(
             gray_scale.astype(int),
-            orientations=12,
+            orientations=16,
             pixels_per_cell=(24, 24),
-            cells_per_block=(2, 2),
+            cells_per_block=(1, 1),
             visualize=False,
             channel_axis=None,
             )
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # Train a simple classifier
     start = time()
-    clf = LogisticRegression(max_iter=30_000, n_jobs=-1)
+    clf = LogisticRegression(max_iter=10_000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     del X_train, y_train
