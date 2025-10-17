@@ -5,6 +5,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_sc
 
 def time_convert(elapsed):
     # assert isinstance(elapsed, float), "Elapsed time must be a number"
+    if isinstance(elapsed, list):
+        elapsed = elapsed[0]
 
     h, rem = divmod(float(elapsed), 3600)
     m, s   = divmod(float(rem), 60)
@@ -72,15 +74,15 @@ class Evaluate:
             f.write("Model Evaluation Metrics\n")
             f.write("=" * (longest_name + 14) + "\n")
             for metric, value in _metrics.items():
+                if isinstance(value, list): value = value[0]
                 if metric in self.strObj: f.write(f"{metric:<{longest_name}} : {value:>8}\n")
                 else: f.write(f"{metric:<{longest_name}} : {value:>8.4f}\n")
             f.write("=" * (longest_name + 14) + "\n")
         print(f"Metrics saved to {filepath}")
 
 
-    def print_metrics(self, _metrics):
-        _metrics = _metrics.copy()
-
+    def print_metrics(self, metrics):
+        _metrics = metrics.copy()
         if 'training_time' in _metrics:
             _metrics['training_time'] = time_convert(_metrics['training_time'])
         
@@ -89,6 +91,7 @@ class Evaluate:
         print("Model Evaluation Metrics")
         print("=" * (longest_name + 14))
         for metric, value in _metrics.items():
+            if isinstance(value, list): value = value[0]
             if metric in self.strObj: print(f"{metric:<{longest_name}} : {value:>8}")
             else: print(f"{metric:<{longest_name}} : {value:>8.4f}")
         print("=" * (longest_name + 14))
