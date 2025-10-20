@@ -23,14 +23,14 @@ def feature_transform(data: np.ndarray) -> np.ndarray:
     resolution = 100
 
     # Compute persistence diagram first
-    cub_pers = CubicalPersistence(homology_dimensions=(0, 1), n_jobs=None)
+    cub_pers = CubicalPersistence(homology_dimensions=(0,1), n_jobs=None)
     diagrams = cub_pers.fit_transform([gray_scale])[0]
 
     selector = DiagramSelector(use=True, point_type="finite")
     landscape = Landscape(num_landscapes=num_landscapes, resolution=resolution)
     
     feature_parts = []
-    for diag in diagrams:
+    for diag in diagrams:  # For H0 and H1
         # Check if diagram is empty or has no finite points
         if diag is None or len(diag) == 0 or not np.isfinite(diag).all():
             # Return zero vector of the expected landscape shape
