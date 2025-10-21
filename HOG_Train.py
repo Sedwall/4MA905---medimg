@@ -6,7 +6,13 @@ from Utils.PCAMdataset import PCAMdataset
 from Utils.Traning import traning_run, metrics_avg
 from skimage.feature import hog
 from torch import nn, optim
+import json
 
+
+with open(Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/feature_mean_std.json'), 'r') as f:
+    HOG_FEATURE_STATS = json.load(f)
+    f_mean = HOG_FEATURE_STATS["HOG"]["mean"]
+    f_std = HOG_FEATURE_STATS["HOG"]["std"]
 
 
 ####### Feature Extraction Function #######
@@ -22,6 +28,7 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
             visualize=False,
             channel_axis=None,
             )
+    fd = (fd - f_mean) / f_std
     return fd
 
 
@@ -29,7 +36,7 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
 if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 10
+    N_RUNS = 5
     BATCH_SIZE = 512
     N_EPOCHS = 20
 

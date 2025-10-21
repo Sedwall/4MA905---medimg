@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # Train a simple classifier
     start = time()
-    clf = LogisticRegression(max_iter=1000, n_jobs=-1)
+    clf = LogisticRegression(max_iter=10_000, n_jobs=-1)
     clf.fit(X_train, y_train)
     elapsed = time() - start
     del X_train, y_train
