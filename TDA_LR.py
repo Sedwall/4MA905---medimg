@@ -5,6 +5,7 @@ from Utils.Evaluate import Evaluate
 from pathlib import Path
 import numpy as np
 from time import time
+import json
 
 # Import TDA pipeline requirements
 from sklearn.pipeline import Pipeline, FeatureUnion
@@ -12,27 +13,36 @@ from gudhi.sklearn.cubical_persistence import CubicalPersistence
 from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
 
 
+path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
+# f_transform = get_feature_extractor(path_dir)
+
+
+
+with open(path_dir.joinpath('./pcam/feature_mean_std.json'), 'r') as f:
+    HOG_FEATURE_STATS = json.load(f)
+    f_mean = HOG_FEATURE_STATS["TDA_img"]["mean"]
+    f_std = HOG_FEATURE_STATS["TDA_img"]["std"]
+
+
+
+
 # --- Define this at the top level (so it can be pickled) ---
 def feature_transform(data: np.ndarray) -> np.ndarray:
     gray_scale = data.mean(axis=0)  # Convert to grayscale
 
-    h0_pipe = Pipeline([
-        ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
-        ("H0", DimensionSelector(index=0)),
-        ("finite", DiagramSelector(use=True, point_type="finite")),
-        ("img", PersistenceImage(resolution=[16, 16], im_range=[0, 256, 0, 256], bandwidth=25)),
-    ])
-
-    h1_pipe = Pipeline([
-        ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
-        ("H1", DimensionSelector(index=1)),
-        ("finite", DiagramSelector(use=True, point_type="finite")),
-        ("img", PersistenceImage(resolution=[16, 16], im_range=[0, 256, 0, 256], bandwidth=25)),
-    ])
-
-    pipe = FeatureUnion([("H0", h0_pipe), ("H1", h1_pipe)])
-    feature_vector = pipe.fit_transform([gray_scale])
-    return feature_vector[0]
+    feature_pipe = Pipeline([
+        ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
+        ("finite_diags", DiagramSelector(use=True, point_type="finite")),
+        ("pers_img", PersistenceImage(
+                bandwidth=25,
+                weight=lambda x: x[1],
+                im_range=[0, 256, 0, 256],
+                resolution=[16, 16],
+                        )),
+        ])
+    feature_vector = feature_pipe.fit_transform([gray_scale])
+    feature_vector = (feature_vector[0] - f_mean) / f_std
+    return feature_vector
 
 if __name__ == '__main__':
     DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
