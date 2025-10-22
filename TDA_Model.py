@@ -20,7 +20,7 @@ class Model(nn.Module):
         )
         self.dis = nn.Sequential(
             nn.Dropout(dropout),
-            nn.Linear(chanels*11*11 + 100, 256),
+            nn.Linear(chanels*11*11 + 256, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 2),

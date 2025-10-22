@@ -20,6 +20,14 @@ class Model(nn.Module):
             nn.Flatten(),
         )
 
+        self.featureLayers = nn.Sequential(
+            nn.Linear(432, 432),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(432, 432), 
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
 
         self.dis = nn.Sequential(
             nn.Linear(chanels*11*11 + 432, 256),

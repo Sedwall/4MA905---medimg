@@ -13,16 +13,19 @@ from matplotlib import pyplot as plt
 def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
     ####### Traning Of Model #######
     AVG_metrics = {}
+    loss_hist = []
     for i in range(N_RUNS):
         model = Model()
 
         ## Define loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=N_EPOCHS)
 
-        model, metrics, evaluator, loss_hist = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
 
+        model, metrics, evaluator, losses = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS, scheduler)
 
+        loss_hist.append(losses)
         if not Path(__file__).parent.joinpath("runs").exists():
             Path(__file__).parent.joinpath("runs").mkdir()
         evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
@@ -33,6 +36,8 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
             else:
                 AVG_metrics[key] = [value]
 
+    
+    plot_losses(loss_hist)
 
     # Calculate and print average metrics
     metrics_avg(evaluator, AVG_metrics, __file__)
@@ -40,7 +45,7 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
 
 ########## Training Loop Function ##########
 #-- Helper function for the deep ML models --
-def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate, np.ndarray]:
+def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS, scheduler=None) -> tuple[nn.Module, dict, Evaluate, np.ndarray]:
 
         train_dl = DataLoader(train_data, batch_size=batch_size, shuffle=True,
                             num_workers=8, pin_memory=True, persistent_workers=True,
@@ -92,17 +97,23 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
 
         # ---- Fit ----
         start = time()
-        # scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
 
         loss_hist = {}
         # ---- Main Loop ----
         for epoch in range(1, N_EPOCHS + 1):
             train_loss, train_acc = run_epoch(train_dl, model, optimizer, train=True)
             val_loss, val_acc     = run_epoch(val_dl,   model, optimizer, train=False)
-
-            # scheduler.step()
             
-            loss_hist.append([train_loss, val_loss])
+            if scheduler != None:
+                scheduler.step()
+            
+            if loss_hist.keys():
+                loss_hist['val_loss'].append(val_loss)
+                loss_hist['train_loss'].append(train_loss)
+            else:
+                loss_hist['val_loss'] = [val_loss]
+                loss_hist['train_loss'] = [train_loss]
+
             print(f"Epoch {epoch:02d} | "
                 f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
                 f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
@@ -138,3 +149,13 @@ def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, file):
     evaluator.print_metrics(AVG_metrics)
     file_name = str(file).split('/')[-1].split('.')[0]
     evaluator.save_metrics(AVG_metrics, Path(file).parent/ f"{file_name}_final_metrics.txt")
+
+
+def plot_losses(loss_hist):
+    for i, data in enumerate(loss_hist):
+        train_loss = data['train_loss']
+        val_loss = data['val_loss']
+        plt.plot(train_loss, label = f'TL {i}')
+        plt.plot(val_loss, label = f'VL {i}')
+    plt.legend()
+    plt.savefig(Path(__file__).parent.parent / f"Loss_Plot.png")

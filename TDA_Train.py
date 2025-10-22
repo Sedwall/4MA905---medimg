@@ -4,6 +4,7 @@ from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
 from Utils.Traning import run_experiment
+import json
 
 # Import TDA pipeline requirements
 from sklearn.pipeline import Pipeline
@@ -14,26 +15,37 @@ from gudhi.representations import PersistenceImage, DiagramSelector
 path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
 # f_transform = get_feature_extractor(path_dir)
 
+
+with open(path_dir.joinpath('./pcam/feature_mean_std.json'), 'r') as f:
+    HOG_FEATURE_STATS = json.load(f)
+    f_mean = HOG_FEATURE_STATS["TDA_img"]["mean"]
+    f_std = HOG_FEATURE_STATS["TDA_img"]["std"]
+
+
+
 # --- Define this at the top level (so it can be pickled) ---
 def feature_transform(data: np.ndarray) -> np.ndarray:
     gray_scale = data.mean(axis=0)  # Convert to grayscale
+
     feature_pipe = Pipeline([
         ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
         ("pers_img", PersistenceImage(
-            bandwidth=50,
-            weight=lambda x: x[1] ** 2,
-            im_range=[0, 256, 0, 256],
-            resolution=[10, 10],
-        )),
-    ])
+                bandwidth=25,
+                weight=lambda x: x[1],
+                im_range=[0, 256, 0, 256],
+                resolution=[16, 16],
+                        )),
+        ])
+
     feature_vector = feature_pipe.fit_transform([gray_scale])
-    return feature_vector[0]
+    feature_vector = (feature_vector[0] - f_mean) / f_std
+    return feature_vector
 
 
 if __name__ == '__main__':
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 1
+    N_RUNS = 5
     BATCH_SIZE = 512
     N_EPOCHS = 20
 
@@ -68,6 +80,5 @@ if __name__ == '__main__':
         transform=eval_tf,
         f_transform= feature_transform
     )
-
 
     run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS)
