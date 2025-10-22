@@ -5,11 +5,42 @@ from Utils.Evaluate import Evaluate
 from time import time
 import numpy as np
 from pathlib import Path
+from torch import nn, optim
+from matplotlib import pyplot as plt
+
+
+
+def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
+    ####### Traning Of Model #######
+    AVG_metrics = {}
+    for i in range(N_RUNS):
+        model = Model()
+
+        ## Define loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+        model, metrics, evaluator, loss_hist = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
+
+
+        if not Path(__file__).parent.joinpath("runs").exists():
+            Path(__file__).parent.joinpath("runs").mkdir()
+        evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
+
+        for key, value in zip(metrics.keys(), metrics.values()):
+            if key in AVG_metrics.keys():
+                AVG_metrics[key].append(value)
+            else:
+                AVG_metrics[key] = [value]
+
+
+    # Calculate and print average metrics
+    metrics_avg(evaluator, AVG_metrics, __file__)
 
 
 ########## Training Loop Function ##########
 #-- Helper function for the deep ML models --
-def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate]:
+def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS) -> tuple[nn.Module, dict, Evaluate, np.ndarray]:
 
         train_dl = DataLoader(train_data, batch_size=batch_size, shuffle=True,
                             num_workers=8, pin_memory=True, persistent_workers=True,
@@ -63,14 +94,15 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         start = time()
         # scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=n_epochs)
 
-        
+        loss_hist = {}
         # ---- Main Loop ----
         for epoch in range(1, N_EPOCHS + 1):
             train_loss, train_acc = run_epoch(train_dl, model, optimizer, train=True)
             val_loss, val_acc     = run_epoch(val_dl,   model, optimizer, train=False)
 
             # scheduler.step()
-
+            
+            loss_hist.append([train_loss, val_loss])
             print(f"Epoch {epoch:02d} | "
                 f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
                 f"val: loss {val_loss:.4f}, acc {val_acc:.4f}")
@@ -86,7 +118,7 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         # Calculate model size
         metrics = evaluator.evaluate()
         metrics['training_time'] = elapsed
-        return model, metrics, evaluator
+        return model, metrics, evaluator, loss_hist
 
 
 

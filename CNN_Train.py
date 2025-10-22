@@ -3,17 +3,16 @@ from CNN_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import traning_run, metrics_avg
-from torch import nn, optim
+from Utils.Traning import run_experiment
 
 
 
 if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 5
+    N_RUNS = 2
     BATCH_SIZE = 512
-    N_EPOCHS = 20
+    N_EPOCHS = 1
 
     mean = [0.7008, 0.5384, 0.6916]
     std = [0.2350, 0.2774, 0.2129]
@@ -45,28 +44,4 @@ if __name__ == '__main__':
     )
 
 
-    ####### Traning Of Model #######
-    AVG_metrics = {}
-    for i in range(N_RUNS):
-        model = Model(chanels=16, dropout=0.5)
-
-        ## Define loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
-
-        model, metrics, evaluator = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS)
-
-
-        if not Path(__file__).parent.joinpath("runs").exists():
-            Path(__file__).parent.joinpath("runs").mkdir()
-        evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
-
-        for key, value in zip(metrics.keys(), metrics.values()):
-            if key in AVG_metrics.keys():
-                AVG_metrics[key].append(value)
-            else:
-                AVG_metrics[key] = [value]
-
-
-    # Calculate and print average metrics
-    metrics_avg(evaluator, AVG_metrics, __file__)
+    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS)
