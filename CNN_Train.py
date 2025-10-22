@@ -12,7 +12,7 @@ if __name__ == '__main__':
     ####### Hyperparameters and Data Loading #######
     N_RUNS = 1
     BATCH_SIZE = 512*3
-    N_EPOCHS = 5
+    N_EPOCHS = 25
 
     mean = [0.7008, 0.5384, 0.6916]
     std = [0.2350, 0.2774, 0.2129]

@@ -148,7 +148,7 @@ def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, file):
     print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
     evaluator.print_metrics(AVG_metrics)
     file_name = str(file).split('/')[-1].split('.')[0]
-    evaluator.save_metrics(AVG_metrics, Path(file).parent/ f"{file_name}_final_metrics.txt")
+    evaluator.save_metrics(AVG_metrics, Path(file).parent.parent / f"{file_name}_final_metrics.txt")
 
 
 def plot_losses(loss_hist):
@@ -158,4 +158,4 @@ def plot_losses(loss_hist):
         plt.plot(train_loss, label = f'TL {i}')
         plt.plot(val_loss, label = f'VL {i}')
     plt.legend()
-    plt.savefig(Path(__file__).parent.parent / f"Loss_Plot.png")
+    plt.savefig(Path(__file__).parent.parent.parent / f"Loss_Plot.png")
