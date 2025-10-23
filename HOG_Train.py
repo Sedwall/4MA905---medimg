@@ -35,8 +35,8 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
 if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 5
-    BATCH_SIZE = 512
+    N_RUNS = 1
+    BATCH_SIZE = 512*3
     N_EPOCHS = 20
 
     mean = [0.7008, 0.5384, 0.6916]

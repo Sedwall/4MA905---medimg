@@ -10,10 +10,11 @@ from matplotlib import pyplot as plt
 
 
 
-def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
+def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, file_path):
     ####### Traning Of Model #######
     AVG_metrics = {}
     loss_hist = []
+    acc_hist = []
     for i in range(N_RUNS):
         model = Model()
 
@@ -23,9 +24,10 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
         scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=N_EPOCHS)
 
 
-        model, metrics, evaluator, losses = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS, scheduler)
+        model, metrics, evaluator, losses, acc = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS, scheduler)
 
         loss_hist.append(losses)
+        acc_hist.append(acc)
         if not Path(__file__).parent.joinpath("runs").exists():
             Path(__file__).parent.joinpath("runs").mkdir()
         evaluator.save_metrics(metrics, Path(__file__).parent / "runs" / f"metrics{i}.txt")
@@ -36,11 +38,10 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS):
             else:
                 AVG_metrics[key] = [value]
 
-    
-    plot_losses(loss_hist)
+    plot_losses(loss_hist, acc_hist, file_path)
 
     # Calculate and print average metrics
-    metrics_avg(evaluator, AVG_metrics, __file__)
+    metrics_avg(evaluator, AVG_metrics, file_path)
 
 
 ########## Training Loop Function ##########
@@ -99,6 +100,7 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         start = time()
 
         loss_hist = {}
+        acc_hist = {}
         # ---- Main Loop ----
         for epoch in range(1, N_EPOCHS + 1):
             train_loss, train_acc = run_epoch(train_dl, model, optimizer, train=True)
@@ -113,6 +115,13 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
             else:
                 loss_hist['val_loss'] = [val_loss]
                 loss_hist['train_loss'] = [train_loss]
+
+            if acc_hist.keys():
+                acc_hist['val_acc'].append(val_acc)
+                acc_hist['train_acc'].append(train_acc)
+            else:
+                acc_hist['val_acc'] = [val_acc]
+                acc_hist['train_acc'] = [train_acc]
 
             print(f"Epoch {epoch:02d} | "
                 f"train: loss {train_loss:.4f}, acc {train_acc:.4f} | "
@@ -129,7 +138,7 @@ def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_
         # Calculate model size
         metrics = evaluator.evaluate()
         metrics['training_time'] = elapsed
-        return model, metrics, evaluator, loss_hist
+        return model, metrics, evaluator, loss_hist, acc_hist
 
 
 
@@ -151,11 +160,32 @@ def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, file):
     evaluator.save_metrics(AVG_metrics, Path(file).parent.parent / f"{file_name}_final_metrics.txt")
 
 
-def plot_losses(loss_hist):
-    for i, data in enumerate(loss_hist):
-        train_loss = data['train_loss']
-        val_loss = data['val_loss']
-        plt.plot(train_loss, label = f'TL {i}')
-        plt.plot(val_loss, label = f'VL {i}')
-    plt.legend()
-    plt.savefig(Path(__file__).parent.parent.parent / f"Loss_Plot.png")
+
+
+
+def plot_losses(loss_hist, acc_hist, file_path):
+    if acc_hist == None:
+        for i, data in enumerate(loss_hist):
+            train_loss = data['train_loss']
+            val_loss = data['val_loss']
+            plt.plot(train_loss, label = f'TL {i}')
+            plt.plot(val_loss, label = f'VL {i}')
+        plt.legend()
+        plt.savefig(Path(__file__).parent.parent / f"Loss_Plot.png")
+    
+    else:
+        fig, axes = plt.subplots(ncols=2, nrows=1,)
+        for i, (loss, acc) in enumerate(zip(loss_hist, acc_hist)):
+            train_loss = loss['train_loss']
+            val_loss = loss['val_loss']
+            train_acc = acc['train_acc']
+            val_acc = acc['val_acc']
+            axes[0].plot(train_loss, label = f'T Loss {i}')
+            axes[0].plot(val_loss, label = f'V Loss {i}')
+
+            axes[1].plot(train_acc, label = f'T acc. {i}')
+            axes[1].plot(val_acc, label = f'V acc. {i}')
+
+        fig.legend()
+        file_name = str(file_path).split('/')[-1].split('.')[0]
+        fig.savefig(Path(__file__).parent.parent / f"{file_name}_Loss_Plot.png")
