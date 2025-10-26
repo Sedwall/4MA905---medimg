@@ -1,9 +1,8 @@
-import numpy as np
 from CNN_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import run_experiment
+from Utils.Training import run_experiment
 
 
 
@@ -11,8 +10,8 @@ if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
     N_RUNS = 1
-    BATCH_SIZE = 512*3
-    N_EPOCHS = 20
+    BATCH_SIZE = 512
+    N_EPOCHS = 1
 
     mean = [0.7008, 0.5384, 0.6916]
     std = [0.2350, 0.2774, 0.2129]
@@ -27,7 +26,7 @@ if __name__ == '__main__':
     ])
 
     # Setting up directory
-    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
+    path_dir = Path(__file__).parent.joinpath('./dataset/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets

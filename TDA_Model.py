@@ -16,10 +16,10 @@ class Model(nn.Module):
             nn.Conv2d(chanels, chanels, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(dropout),
             nn.Flatten(),
         )
         self.dis = nn.Sequential(
-            nn.Dropout(dropout),
             nn.Linear(chanels*11*11 + 256, 256),
             nn.ReLU(),
             nn.Dropout(dropout),

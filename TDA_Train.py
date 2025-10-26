@@ -3,7 +3,7 @@ from TDA_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import run_experiment
+from Utils.Training import run_experiment
 import json
 
 # Import TDA pipeline requirements
@@ -11,9 +11,8 @@ from sklearn.pipeline import Pipeline
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
 from gudhi.representations import PersistenceImage, DiagramSelector
 
-# # Setting up directory
-path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
-# f_transform = get_feature_extractor(path_dir)
+# Setting up directory
+path_dir = Path(__file__).parent.joinpath('./dataset/')
 
 
 with open(path_dir.joinpath('./pcam/feature_mean_std.json'), 'r') as f:
@@ -81,4 +80,4 @@ if __name__ == '__main__':
         f_transform= feature_transform
     )
 
-    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS)
+    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, __file__)

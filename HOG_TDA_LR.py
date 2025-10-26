@@ -6,50 +6,55 @@ from pathlib import Path
 import numpy as np
 from skimage.feature import hog
 from time import time
+import json
 
 # Import TDA pipeline requirements
-from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.pipeline import Pipeline
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
-from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
+from gudhi.representations import PersistenceImage, DiagramSelector
+
+path_dir = Path(__file__).parent.joinpath('./dataset/')
 
 
-####### Feature Extraction Function #######
-def feature_transform(data:np.ndarray) -> np.ndarray:
-    """ Example feature transformation: (C, H, W) """
+with open(path_dir.joinpath('./pcam/feature_mean_std.json'), 'r') as f:
+    HOG_FEATURE_STATS = json.load(f)
+    f_mean = HOG_FEATURE_STATS["TDA_img"]["mean"]
+    f_std = HOG_FEATURE_STATS["TDA_img"]["std"]
+
+
+
+
+# --- Define this at the top level (so it can be pickled) ---
+def feature_transform(data: np.ndarray) -> np.ndarray:
     gray_scale = data.mean(axis=0)  # Convert to grayscale
 
-    h0_pipe = Pipeline([
-        ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
-        ("H0", DimensionSelector(index=0)),
-        ("finite", DiagramSelector(use=True, point_type="finite")),
-        ("img", PersistenceImage(resolution=[16, 16], im_range=[0, 256, 0, 256], bandwidth=25)),
-    ])
-
-    h1_pipe = Pipeline([
-        ("cub_pers", CubicalPersistence(homology_dimensions=[0, 1])),
-        ("H1", DimensionSelector(index=1)),
-        ("finite", DiagramSelector(use=True, point_type="finite")),
-        ("img", PersistenceImage(resolution=[16, 16], im_range=[0, 256, 0, 256], bandwidth=25)),
-    ])
-
-    pipe = FeatureUnion([("H0", h0_pipe), ("H1", h1_pipe)])
-    feature_vector = pipe.fit_transform([gray_scale])
-
+    feature_pipe = Pipeline([
+        ("cub_pers", CubicalPersistence(homology_dimensions=0, n_jobs=None)),
+        ("finite_diags", DiagramSelector(use=True, point_type="finite")),
+        ("pers_img", PersistenceImage(
+                bandwidth=25,
+                weight=lambda x: x[1],
+                im_range=[0, 256, 0, 256],
+                resolution=[16, 16],
+                        )),
+        ])
+    feature_vector = feature_pipe.fit_transform([gray_scale])
+    feature_vector = (feature_vector[0] - f_mean) / f_std
     # Hog Feature
     hog_f = hog(
             gray_scale.astype(int),
             orientations=16,
             pixels_per_cell=(24, 24),
-            cells_per_block=(1, 1),
+            cells_per_block=(2, 2),
             visualize=False,
             channel_axis=None,
             )
 
-    fd = np.concatenate((hog_f, feature_vector[0]))
+    fd = np.concatenate((hog_f, feature_vector))
     return fd
 
 if __name__ == '__main__':
-    DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
+    DATA_PATH = Path(__file__).parent.joinpath('./dataset/pcam')
 
     _, X_train, y_train= get_entire_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_train_x.h5",
                                         y_path=DATA_PATH / "camelyonpatch_level_2_split_train_y.h5",

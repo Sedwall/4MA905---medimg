@@ -24,7 +24,7 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
     return fd
 
 if __name__ == '__main__':
-    DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
+    DATA_PATH = Path(__file__).parent.joinpath('./dataset/pcam')
 
     _, X_train, y_train= get_entire_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_train_x.h5",
                                         y_path=DATA_PATH / "camelyonpatch_level_2_split_train_y.h5",
@@ -62,4 +62,5 @@ if __name__ == '__main__':
 
     evaluator = Evaluate(model=None, val_data=None, device=None)
     evaluator.print_metrics(metrics)
-    evaluator.save_metrics(metrics, Path("./HOG_LR_metrics.txt"))
+    file_name = str(__file__).split('/')[-1].split('.')[0]
+    evaluator.save_metrics(metrics, Path(__file__).parent / "TrainingResults" / f"{file_name}_metrics.txt")

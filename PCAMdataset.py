@@ -1,6 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms as T
+from torch.utils.data import Dataset
 import h5py
 import numpy as np
 

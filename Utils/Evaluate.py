@@ -3,6 +3,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 
+
 def time_convert(elapsed):
     # assert isinstance(elapsed, float), "Elapsed time must be a number"
     if isinstance(elapsed, list):
@@ -69,6 +70,7 @@ class Evaluate:
             _metrics['training_time'] = time_convert(_metrics['training_time'])
 
         longest_name = max(len(m) for m in _metrics.keys())
+        
         with open(filepath, 'w') as f:
             f.write("=" * (longest_name + 14) + "\n")
             f.write("Model Evaluation Metrics\n")

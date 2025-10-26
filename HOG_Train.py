@@ -3,12 +3,15 @@ from HOG_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import run_experiment
+from Utils.Training import run_experiment
 from skimage.feature import hog
 import json
 
+# Setting up directory
+path_dir = Path(__file__).parent.joinpath('./dataset/')
 
-with open(Path(__file__).parent.parent.parent.joinpath('./dataset/pcam/feature_mean_std.json'), 'r') as f:
+
+with open(path_dir.joinpath('./pcam/feature_mean_std.json'), 'r') as f:
     HOG_FEATURE_STATS = json.load(f)
     f_mean = HOG_FEATURE_STATS["HOG"]["mean"]
     f_std = HOG_FEATURE_STATS["HOG"]["std"]
@@ -35,8 +38,8 @@ def feature_transform(img:np.ndarray) -> np.ndarray:
 if __name__ == '__main__':
 
     ####### Hyperparameters and Data Loading #######
-    N_RUNS = 1
-    BATCH_SIZE = 512*3
+    N_RUNS = 5
+    BATCH_SIZE = 512
     N_EPOCHS = 20
 
     mean = [0.7008, 0.5384, 0.6916]
@@ -52,7 +55,6 @@ if __name__ == '__main__':
     ])
 
     # Setting up directory
-    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets
@@ -71,4 +73,4 @@ if __name__ == '__main__':
     )
 
 
-    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS)
+    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, __file__)

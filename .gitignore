@@ -1,6 +1,7 @@
 # Ignore file of specific type
 *.pyc
-model.pt
+*.h5
+*.csv
 
 # Ignore directories
 __pycache__/
@@ -8,6 +9,7 @@ __pycache__/
 .vscode/
 
 # Ignore file
+model.pt
 model.pt
 runs/
 

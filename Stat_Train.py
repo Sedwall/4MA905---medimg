@@ -3,12 +3,12 @@ from Stat_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import run_experiment
+from Utils.Training import run_experiment
 from sklearn.pipeline import Pipeline
 
 # Import TDA pipeline requirements
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
-from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
+from gudhi.representations import DiagramSelector
 
 def stats(x):  
         if len(x) == 0:
@@ -36,21 +36,21 @@ def persistence_statistics(diagram):
 
     # Compute all distributions
     features = stats(p)
-    np.concat((features, stats(q)))
-    np.concat((features, stats(mid)))
-    np.concat((features, stats(life)))
+    features = np.concat((features, stats(q)))
+    features = np.concat((features, stats(mid)))
+    features = np.concat((features, stats(life)))
 
     # Number of bars
-    np.append(features, len(life))
+    features = np.append(features, len(life))
 
     # Entropy
 
     L_mu = np.sum(life)
     if L_mu > 0 and life.size != 0:
         probs = life / L_mu
-        np.append(features, -np.sum(probs * np.log(probs)))
+        features = np.append(features, -np.sum(probs * np.log(probs)))
     else:
-        np.append(features, 0)
+        features = np.append(features, 0)
 
     return features
 
@@ -59,33 +59,20 @@ def persistence_statistics(diagram):
 def feature_transform(img: np.ndarray) -> dict:
     """Transform an image into persistence statistics features."""
     img = img.mean(axis=0)  # Convert to grayscale by averaging channels
-    # pipe_H0 = Pipeline([
-    #     ("cub_pers", CubicalPersistence(
-    #         homology_dimensions=0,
-    #         homology_coeff_field=11,
-    #         n_jobs=None
-    #     )),
-    #     ("finite_diags", DiagramSelector(use=True, point_type="finite")),
-    # ])
-
-    # diagrams_H0 = pipe_H0.fit_transform([img])
-    # diagrams_H0 = np.array(diagrams_H0)[0]  # Extract the first (and only) diagram
-    # features_H0 = persistence_statistics(diagrams_H0)
-
-    pipe_H1 = Pipeline([
+    pipe_H0 = Pipeline([
         ("cub_pers", CubicalPersistence(
-            homology_dimensions=1,
+            homology_dimensions=0,
             homology_coeff_field=11,
             n_jobs=None
         )),
         ("finite_diags", DiagramSelector(use=True, point_type="finite")),
     ])
 
-    diagrams_H1 = pipe_H1.fit_transform([img])
-    diagrams_H1 = np.array(diagrams_H1)[0]
-    features_H1 = persistence_statistics(diagrams_H1)
-    # return np.concatenate((features_H0, features_H1))
-    return features_H1
+    diagrams_H0 = pipe_H0.fit_transform([img])
+    diagrams_H0 = np.array(diagrams_H0)[0]  # Extract the first (and only) diagram
+    features_H0 = persistence_statistics(diagrams_H0)
+
+    return features_H0
 
 if __name__ == '__main__':
 
@@ -107,7 +94,7 @@ if __name__ == '__main__':
     ])
 
     # Setting up directory
-    path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
+    path_dir = Path(__file__).parent.joinpath('./dataset/')
     print(f'Using data from: {path_dir}')
 
     # Create datasets

@@ -7,9 +7,9 @@ import torch
 
 
 # Import TDA pipeline requirements
-from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.pipeline import Pipeline
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
-from gudhi.representations import PersistenceImage, DiagramSelector, DimensionSelector
+from gudhi.representations import PersistenceImage, DiagramSelector
 
 
 ####### Feature Extraction Function #######
@@ -57,7 +57,7 @@ def get_mean_and_std(data: torch.Tensor) -> tuple[float, float]:
 
 
 if __name__ == '__main__':
-    DATA_PATH = Path(__file__).parent.parent.parent.joinpath('./dataset/pcam')
+    DATA_PATH = Path(__file__).parent.joinpath('./dataset/pcam')
 
     _, X_train, _= get_entire_dataset(x_path=DATA_PATH / "camelyonpatch_level_2_split_train_x.h5",
                                         y_path=DATA_PATH / "camelyonpatch_level_2_split_train_y.h5",

@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 
 def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, file_path):
-    ####### Traning Of Model #######
+    ####### Training Of Model #######
     AVG_metrics = {}
     loss_hist = []
     acc_hist = []
@@ -24,7 +24,7 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, f
         scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.5, end_factor=0.001, total_iters=N_EPOCHS)
 
 
-        model, metrics, evaluator, losses, acc = traning_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS, scheduler)
+        model, metrics, evaluator, losses, acc = training_run(model, train_data, test_data, loss_fn, optimizer, BATCH_SIZE, N_EPOCHS, scheduler)
 
         loss_hist.append(losses)
         acc_hist.append(acc)
@@ -46,7 +46,7 @@ def run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, f
 
 ########## Training Loop Function ##########
 #-- Helper function for the deep ML models --
-def traning_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS, scheduler=None) -> tuple[nn.Module, dict, Evaluate, np.ndarray]:
+def training_run(model, train_data, test_data, loss_fn, optimizer, batch_size, N_EPOCHS, scheduler=None) -> tuple[nn.Module, dict, Evaluate, np.ndarray]:
 
         train_dl = DataLoader(train_data, batch_size=batch_size, shuffle=True,
                             num_workers=8, pin_memory=True, persistent_workers=True,
@@ -156,14 +156,28 @@ def metrics_avg(evaluator: Evaluate, AVG_metrics: dict, file):
 
     print(f"{'*' * 7:s}Final Metrics{'*' * 7:s}")
     evaluator.print_metrics(AVG_metrics)
-    file_name = str(file).split('/')[-1].split('.')[0]
-    evaluator.save_metrics(AVG_metrics, Path(file).parent.parent / f"{file_name}_final_metrics.txt")
+    if "/" in str(file):
+        file_name = str(file).split('/')[-1].split('.')[0]
+    else:
+        file_name = str(file).split('\\')[-1].split('.')[0]
 
-
+    # Build and ensure TrainingResults directory exists
+    base_dir = Path(__file__).resolve().parent.parent.joinpath("TrainingResults")
+    save_path = base_dir.joinpath(f"{file_name}_final_metrics.txt")
+    evaluator.save_metrics(AVG_metrics, save_path)
 
 
 
 def plot_losses(loss_hist, acc_hist, file_path):
+    if "/" in str(file_path):
+        file_name = str(file_path).split('/')[-1].split('.')[0]
+    else:
+        file_name = str(file_path).split('\\')[-1].split('.')[0]
+
+    # Build and ensure TrainingResults directory exists
+    base_dir = Path(__file__).resolve().parent.parent.joinpath("TrainingResults")
+    save_path = base_dir.joinpath(f"{file_name}Loss_Plot.png")
+
     if acc_hist == None:
         for i, data in enumerate(loss_hist):
             train_loss = data['train_loss']
@@ -171,7 +185,7 @@ def plot_losses(loss_hist, acc_hist, file_path):
             plt.plot(train_loss, label = f'TL {i}')
             plt.plot(val_loss, label = f'VL {i}')
         plt.legend()
-        plt.savefig(Path(__file__).parent.parent / f"Loss_Plot.png")
+        fig.savefig(save_path)
     
     else:
         fig, axes = plt.subplots(ncols=2, nrows=1,)
@@ -188,4 +202,4 @@ def plot_losses(loss_hist, acc_hist, file_path):
 
         fig.legend()
         file_name = str(file_path).split('/')[-1].split('.')[0]
-        fig.savefig(Path(__file__).parent.parent / f"{file_name}_Loss_Plot.png")
+        fig.savefig(save_path)

@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch
 
 class Model(nn.Module):
     def __init__(self, chanels=16, dropout=0.5):
@@ -9,24 +8,21 @@ class Model(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Dropout(dropout),
-            nn.Conv2d(chanels, 8, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(chanels, chanels, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Dropout(dropout),
-            nn.Conv2d(8, 4, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(chanels, chanels, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Dropout(dropout),
             nn.Flatten(),
         )
         self.dis = nn.Sequential(
-            nn.Linear(4*11*11, 1024),
+            nn.Linear(chanels*11*11, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(1024, 1024),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(1024, 2),
+            nn.Linear(256, 2),
         )
 
     def forward(self, x, _):

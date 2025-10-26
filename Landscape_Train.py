@@ -3,14 +3,14 @@ from Landscape_Model import Model
 from pathlib import Path
 from torchvision import transforms as T
 from Utils.PCAMdataset import PCAMdataset
-from Utils.Traning import run_experiment
+from Utils.Training import run_experiment
 
 # Import TDA pipeline requirements
 from gudhi.sklearn.cubical_persistence import CubicalPersistence
 from gudhi.representations import DiagramSelector, Landscape
 
 # # Setting up directory
-path_dir = Path(__file__).parent.parent.parent.joinpath('./dataset/')
+path_dir = Path(__file__).parent.joinpath('./dataset/')
 # f_transform = get_feature_extractor(path_dir)
 
 # --- Define this at the top level (so it can be pickled) ---
@@ -88,4 +88,4 @@ if __name__ == '__main__':
     )
 
 
-    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS)
+    run_experiment(Model, train_data, test_data, BATCH_SIZE, N_EPOCHS, N_RUNS, __file__)
